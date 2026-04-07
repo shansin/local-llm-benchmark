@@ -1,0 +1,8 @@
+Explain the difference between nuclear fission and nuclear fusion. Cover the following points:
+1. The basic physical process of each
+2. Energy requirements and output
+3. Current real-world applications of each
+4. The main engineering challenges preventing widespread fusion power
+5. Safety considerations for both approaches
+
+Keep your answer factual and concise (under 500 words).

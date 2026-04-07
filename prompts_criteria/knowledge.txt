@@ -1,0 +1,10 @@
+Evaluation criteria:
+- Must cover all 5 requested points:
+  1. Basic process: fission splits heavy nuclei, fusion combines light nuclei
+  2. Energy: fission requires neutron bombardment, fusion requires extreme temperature/pressure; both release energy but fusion yields more per unit mass
+  3. Applications: fission used in nuclear power plants and weapons; fusion used in hydrogen bombs and experimental reactors (ITER, NIF)
+  4. Fusion challenges: plasma confinement, achieving net energy gain (Q>1), material durability, tritium fuel supply
+  5. Safety: fission risks include meltdowns, radioactive waste, proliferation; fusion is inherently safer (no chain reaction, minimal long-lived waste)
+- Must be factually accurate with no major errors
+- Must be concise (under 500 words)
+- Should be well-organized and clearly address each point

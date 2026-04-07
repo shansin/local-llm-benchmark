@@ -1,0 +1,7 @@
+I need you to perform the following tasks in order and present each result clearly labeled:
+
+1. Convert the decimal number 247 to binary, octal, and hexadecimal.
+2. Take the hexadecimal result and reverse its characters. What decimal number does the reversed hex represent?
+3. List the first 8 prime numbers, then compute their sum.
+4. Take that sum and express it as a Roman numeral.
+5. Finally, create a simple ASCII art representation of the Roman numeral you computed (each character should be at least 3 lines tall).

@@ -1,0 +1,14 @@
+Expected answer: The Canadian drinks water.
+
+Key deductions:
+- Canadian is in house 1 (clue 2)
+- Middle house (3) drinks milk (clue 7)
+- Green house is right of white house and drinks coffee (clues 3, 5)
+- Dutch drinks tea (clue 4)
+- Through elimination of house colors and nationalities, the Canadian in house 1 is left with water
+
+Evaluation criteria:
+- Must arrive at the correct answer (Canadian drinks water)
+- Must show clear step-by-step logical reasoning
+- Deductions should follow from the clues without contradictions
+- Deduct heavily for wrong final answer
