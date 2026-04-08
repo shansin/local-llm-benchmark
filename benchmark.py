@@ -5,6 +5,7 @@ import os
 import re
 import subprocess
 import sys
+import time
 from datetime import datetime
 from pathlib import Path
 
@@ -17,6 +18,7 @@ BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
 PROMPTS_DIR = Path(os.getenv("PROMPTS_DIR", "./prompts"))
 CRITERIA_DIR = Path(os.getenv("CRITERIA_DIR", "./prompts_criteria"))
 OUTPUT_DIR = Path(os.getenv("OUTPUT_DIR", "./output"))
+PROMPT_TIMEOUT = int(os.getenv("PROMPT_TIMEOUT", "2700"))
 
 
 def get_models():
@@ -32,7 +34,15 @@ def get_models():
         if "embed" in name or any("embed" in f for f in families):
             continue
         filtered.append(m)
-    return filtered
+    def param_sort_key(m):
+        size = m.get("details", {}).get("parameter_size", "0")
+        match = re.match(r"([\d.]+)\s*([BKMGT]?)", str(size).upper())
+        if not match:
+            return 0
+        val, unit = float(match.group(1)), match.group(2)
+        return val * {"B": 1e9, "M": 1e6, "K": 1e3, "G": 1e9, "T": 1e12, "": 1}.get(unit, 1)
+
+    return sorted(filtered, key=param_sort_key)
 
 
 def get_model_details(model_name):
@@ -101,27 +111,22 @@ def load_txt_dir(directory, required=False):
     return files
 
 
-def run_prompt(model_name, prompt_text, retries=2):
+def run_prompt(model_name, prompt_text):
     """Run a prompt against a model and return response + metrics."""
-    for attempt in range(retries + 1):
-        try:
-            resp = requests.post(
-                f"{BASE_URL}/api/generate",
-                json={"model": model_name, "prompt": prompt_text, "stream": False},
-                timeout=1800,
-            )
-            resp.raise_for_status()
-            break
-        except requests.exceptions.ReadTimeout:
-            if attempt < retries:
-                print(f"timeout, retrying ({attempt + 1}/{retries})...", end=" ", flush=True)
-            else:
-                print("timeout, skipping.")
-                return {
-                    "response": "[TIMEOUT]",
-                    "tokens_per_sec": 0, "ttft": 0, "total_time": 0,
-                    "eval_count": 0, "prompt_eval_speed": 0, "prompt_eval_count": 0,
-                }
+    try:
+        resp = requests.post(
+            f"{BASE_URL}/api/generate",
+            json={"model": model_name, "prompt": prompt_text, "stream": False},
+            timeout=PROMPT_TIMEOUT,
+        )
+        resp.raise_for_status()
+    except requests.exceptions.ReadTimeout:
+        print("timeout, skipping.")
+        return {
+            "response": "[TIMEOUT]",
+            "tokens_per_sec": 0, "ttft": 0, "total_time": 0,
+            "eval_count": 0, "prompt_eval_speed": 0, "prompt_eval_count": 0,
+        }
     data = resp.json()
 
     eval_duration = data.get("eval_duration", 0)
@@ -298,7 +303,20 @@ def write_model_benchmark(model_dir, model_info, results, prompts):
         (model_dir / f"{category}.md").write_text(cat_md)
 
 
-def write_results(run_dir, all_results, all_details, judge_scores, judge_model, prompts):
+def format_duration(seconds):
+    """Format seconds into a human-readable duration string."""
+    hours, remainder = divmod(int(seconds), 3600)
+    minutes, secs = divmod(remainder, 60)
+    parts = []
+    if hours:
+        parts.append(f"{hours}h")
+    if minutes:
+        parts.append(f"{minutes}m")
+    parts.append(f"{secs}s")
+    return " ".join(parts)
+
+
+def write_results(run_dir, all_results, all_details, judge_scores, judge_model, prompts, total_runtime=None):
     """Write the final results.md with merged performance + quality table."""
     categories = list(prompts.keys())
 
@@ -316,7 +334,10 @@ def write_results(run_dir, all_results, all_details, judge_scores, judge_model, 
     else:
         md += "- **GPUs:** Not detected\n"
     cuda_vis = os.environ.get("CUDA_VISIBLE_DEVICES", "all")
-    md += f"- **Ollama GPUs:** CUDA_VISIBLE_DEVICES={cuda_vis}\n\n"
+    md += f"- **Ollama GPUs:** CUDA_VISIBLE_DEVICES={cuda_vis}\n"
+    if total_runtime is not None:
+        md += f"- **Total Benchmark Runtime:** {format_duration(total_runtime)}\n"
+    md += "\n"
 
     # Merged table
     md += f"## Results (Judge: {judge_model})\n\n"
@@ -397,6 +418,7 @@ def main():
     run_dir.mkdir(parents=True, exist_ok=True)
 
     # 6. Benchmark each model
+    bench_start = time.monotonic()
     all_results = {}
     all_details = {}
     for mi, model in enumerate(selected, 1):
@@ -442,9 +464,11 @@ def main():
             print(f"{score}/10")
 
     # 8. Write results
-    write_results(run_dir, all_results, all_details, judge_scores, judge["name"], prompts)
+    total_runtime = time.monotonic() - bench_start
+    write_results(run_dir, all_results, all_details, judge_scores, judge["name"], prompts, total_runtime)
     print(f"\n{'═' * 50}")
     print(f"  Results saved to: {run_dir / 'results.md'}")
+    print(f"  Total runtime: {format_duration(total_runtime)}")
     print(f"{'═' * 50}")
 
 
