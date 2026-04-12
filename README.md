@@ -62,6 +62,8 @@ Copy `.env.example` to `.env` (or just set environment variables directly):
 | `OUTPUT_DIR` | `./output` | Directory for benchmark results |
 | `BENCHMARK_MODELS` | *(interactive)* | Comma-separated model names to benchmark, or `all` |
 | `JUDGE_MODEL` | *(interactive)* | Model name to use as judge |
+| `PROMPT_TIMEOUT` | `2700` | Per-prompt request timeout (seconds) |
+| `JUDGE_TIMEOUT` | `1800` | Per-judge request timeout (seconds); timeouts/errors record a 0 score |
 
 `PROMPTS_DIR` and `CRITERIA_DIR` are fixed to `./prompts` and `./prompts_criteria` respectively.
 
@@ -85,6 +87,18 @@ Or directly:
 ```bash
 uv run benchmark.py
 ```
+
+### Resuming a crashed or interrupted run
+
+Each run writes a `state.json` checkpoint into its output folder after every
+completed prompt and judge call. To resume, pass `--resume` with the run folder:
+
+```bash
+./start_benchmark.sh --resume ./output/2026-04-11_23-43-10
+```
+
+Already-completed prompts and judge scores are reused from the checkpoint; only
+the remaining work runs. Total benchmark runtime is accumulated across sessions.
 
 ## Adding prompts
 

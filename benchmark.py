@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """Local LLM Benchmark Tool — benchmarks Ollama models across prompt categories."""
 
+import argparse
+import json
 import os
 import re
 import subprocess
@@ -19,6 +21,8 @@ PROMPTS_DIR = Path(os.getenv("PROMPTS_DIR", "./prompts"))
 CRITERIA_DIR = Path(os.getenv("CRITERIA_DIR", "./prompts_criteria"))
 OUTPUT_DIR = Path(os.getenv("OUTPUT_DIR", "./output"))
 PROMPT_TIMEOUT = int(os.getenv("PROMPT_TIMEOUT", "2700"))
+JUDGE_TIMEOUT = int(os.getenv("JUDGE_TIMEOUT", "1800"))
+STATE_FILE = "state.json"
 
 
 def get_models():
@@ -174,12 +178,18 @@ AI response:
 Score: <number>
 Reason: <one line justification>"""
 
-    resp = requests.post(
-        f"{BASE_URL}/api/generate",
-        json={"model": judge_model, "prompt": judge_prompt, "stream": False},
-        timeout=600,
-    )
-    resp.raise_for_status()
+    try:
+        resp = requests.post(
+            f"{BASE_URL}/api/generate",
+            json={"model": judge_model, "prompt": judge_prompt, "stream": False},
+            timeout=JUDGE_TIMEOUT,
+        )
+        resp.raise_for_status()
+    except requests.exceptions.Timeout:
+        return 0, "[JUDGE TIMEOUT]"
+    except requests.exceptions.RequestException as e:
+        return 0, f"[JUDGE ERROR: {type(e).__name__}]"
+
     judge_text = resp.json().get("response", "")
 
     # Parse score
@@ -303,6 +313,22 @@ def write_model_benchmark(model_dir, model_info, results, prompts):
         (model_dir / f"{category}.md").write_text(cat_md)
 
 
+def save_state(run_dir, state):
+    """Atomically save resume state to state.json."""
+    path = run_dir / STATE_FILE
+    tmp = path.with_suffix(".json.tmp")
+    tmp.write_text(json.dumps(state, indent=2))
+    tmp.replace(path)
+
+
+def load_state(run_dir):
+    """Load resume state from state.json, or None if absent."""
+    path = run_dir / STATE_FILE
+    if not path.exists():
+        return None
+    return json.loads(path.read_text())
+
+
 def format_duration(seconds):
     """Format seconds into a human-readable duration string."""
     hours, remainder = divmod(int(seconds), 3600)
@@ -381,48 +407,110 @@ def write_results(run_dir, all_results, all_details, judge_scores, judge_model, 
     (run_dir / "results.md").write_text(md)
 
 
+def parse_args():
+    parser = argparse.ArgumentParser(description="Local LLM Benchmark Tool")
+    parser.add_argument(
+        "--resume", type=Path, default=None,
+        help="Resume a previous run from an output folder (e.g. ./output/2026-04-11_23-43-10)",
+    )
+    return parser.parse_args()
+
+
 def main():
+    args = parse_args()
     print("=" * 60)
     print("  Local LLM Benchmark Tool")
     print("=" * 60)
 
-    # 1. Get models
-    print("\nFetching models from Ollama...")
-    models = get_models()
-    if not models:
-        print("No models found. Is Ollama running?")
-        sys.exit(1)
-
-    # 2. Select models to benchmark
-    selected = select_models(models)
-    if not selected:
-        print("No models selected.")
-        sys.exit(1)
-    print(f"\nBenchmarking: {', '.join(m['name'] for m in selected)}")
-
-    # 3. Select judge model
-    judge = select_judge(models)
-    print(f"Judge model: {judge['name']}")
-
-    # 4. Load prompts and expected answers
+    # Load prompts and expected answers (needed in both fresh and resume paths)
     prompts = load_txt_dir(PROMPTS_DIR, required=True)
     expected = load_txt_dir(CRITERIA_DIR)
     categories = list(prompts.keys())
+
+    # Resume or fresh start
+    if args.resume:
+        run_dir = args.resume
+        if not run_dir.exists():
+            print(f"Error: resume folder '{run_dir}' not found.")
+            sys.exit(1)
+        state = load_state(run_dir)
+        if state is None:
+            print(f"Error: no {STATE_FILE} in '{run_dir}'.")
+            sys.exit(1)
+        print(f"\nResuming from: {run_dir}")
+        selected = state["selected"]
+        judge = state["judge"]
+        all_results = state.get("all_results", {})
+        all_details = state.get("all_details", {})
+        judge_scores = state.get("judge_scores", {})
+        elapsed_prior = state.get("elapsed_seconds", 0.0)
+        # Warn if prompt set changed since original run
+        if state.get("categories") and state["categories"] != categories:
+            print(f"Warning: prompt categories changed since original run.")
+            print(f"  Original: {state['categories']}")
+            print(f"  Current:  {categories}")
+    else:
+        # 1. Get models
+        print("\nFetching models from Ollama...")
+        models = get_models()
+        if not models:
+            print("No models found. Is Ollama running?")
+            sys.exit(1)
+
+        # 2. Select models to benchmark
+        selected_models = select_models(models)
+        if not selected_models:
+            print("No models selected.")
+            sys.exit(1)
+        selected = [{"name": m["name"], "details": m.get("details", {})} for m in selected_models]
+        print(f"\nBenchmarking: {', '.join(m['name'] for m in selected)}")
+
+        # 3. Select judge model
+        judge_model = select_judge(models)
+        judge = {"name": judge_model["name"], "details": judge_model.get("details", {})}
+        print(f"Judge model: {judge['name']}")
+
+        # 4. Output dir
+        timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        run_dir = OUTPUT_DIR / timestamp
+        run_dir.mkdir(parents=True, exist_ok=True)
+
+        all_results = {}
+        all_details = {}
+        judge_scores = {}
+        elapsed_prior = 0.0
+
     print(f"Loaded {len(prompts)} prompt categories: {', '.join(categories)}")
     if expected:
         print(f"Loaded expected answers for: {', '.join(expected.keys())}")
 
-    # 5. Create output directory
-    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    run_dir = OUTPUT_DIR / timestamp
-    run_dir.mkdir(parents=True, exist_ok=True)
+    session_start = time.monotonic()
+
+    def current_elapsed():
+        return elapsed_prior + (time.monotonic() - session_start)
+
+    def checkpoint():
+        save_state(run_dir, {
+            "selected": selected,
+            "judge": judge,
+            "categories": categories,
+            "all_results": all_results,
+            "all_details": all_details,
+            "judge_scores": judge_scores,
+            "elapsed_seconds": current_elapsed(),
+        })
 
     # 6. Benchmark each model
-    bench_start = time.monotonic()
-    all_results = {}
-    all_details = {}
     for mi, model in enumerate(selected, 1):
         model_name = model["name"]
+        if model_name in all_results and all(c in all_results[model_name] for c in categories):
+            model_dir = run_dir / model_name.replace(":", "_").replace("/", "_")
+            model_dir.mkdir(parents=True, exist_ok=True)
+            if not (model_dir / "aggregate_benchmark.md").exists():
+                write_model_benchmark(model_dir, model, all_results[model_name], prompts)
+            print(f"\n[{mi}/{len(selected)}] {model_name}: already complete, skipping.")
+            continue
+
         print(f"\n{'─' * 50}")
         print(f"[{mi}/{len(selected)}] Benchmarking: {model_name}")
         print(f"{'─' * 50}")
@@ -430,13 +518,19 @@ def main():
         model_dir = run_dir / model_name.replace(":", "_").replace("/", "_")
         model_dir.mkdir(parents=True, exist_ok=True)
 
-        results = {}
+        results = all_results.get(model_name, {})
 
         for ci, (category, prompt_text) in enumerate(prompts.items(), 1):
+            if category in results:
+                print(f"  [{ci}/{len(prompts)}] {category}... cached, skipping.")
+                continue
             print(f"  [{ci}/{len(prompts)}] {category}...", end=" ", flush=True)
             result = run_prompt(model_name, prompt_text)
             results[category] = result
+            all_results[model_name] = results
+            all_details[model_name] = model.get("details", {})
             print(f"done ({result['tokens_per_sec']:.1f} tok/s, {result['total_time']:.1f}s)")
+            checkpoint()
 
         all_results[model_name] = results
         all_details[model_name] = model.get("details", {})
@@ -444,28 +538,38 @@ def main():
         # Write per-model benchmark
         write_model_benchmark(model_dir, model, results, prompts)
         print(f"  Saved to {model_dir}/aggregate_benchmark.md")
+        checkpoint()
 
     # 7. Judge scoring
     print(f"\n{'═' * 50}")
     print(f"  Judging responses with: {judge['name']}")
     print(f"{'═' * 50}")
 
-    judge_scores = {}
     for model_name, results in all_results.items():
+        model_scores = judge_scores.get(model_name, {})
+        pending = [c for c in categories if c not in model_scores]
+        if not pending:
+            print(f"\n  Judging: {model_name} — already complete, skipping.")
+            continue
         print(f"\n  Judging: {model_name}")
-        judge_scores[model_name] = {}
+        judge_scores[model_name] = model_scores
         for category in categories:
+            if category in model_scores:
+                print(f"    {category}... cached ({model_scores[category].get('score', 0)}/10)")
+                continue
             print(f"    {category}...", end=" ", flush=True)
             score, reason = judge_response(
                 judge["name"], category, prompts[category], results[category]["response"],
                 expected.get(category, ""),
             )
-            judge_scores[model_name][category] = {"score": score, "reason": reason}
+            model_scores[category] = {"score": score, "reason": reason}
             print(f"{score}/10")
+            checkpoint()
 
     # 8. Write results
-    total_runtime = time.monotonic() - bench_start
+    total_runtime = current_elapsed()
     write_results(run_dir, all_results, all_details, judge_scores, judge["name"], prompts, total_runtime)
+    checkpoint()
     print(f"\n{'═' * 50}")
     print(f"  Results saved to: {run_dir / 'results.md'}")
     print(f"  Total runtime: {format_duration(total_runtime)}")
