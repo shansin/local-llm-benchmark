@@ -1,0 +1,42 @@
+category = "reasoning"
+difficulty = "medium"
+
+prompt = """
+On an island, every inhabitant is either a knight (always tells the truth) or a knave (always lies).
+
+You meet three inhabitants: Ava, Ben, and Cleo.
+
+- Ava says: "Ben is a knave."
+- Ben says: "Ava and Cleo are of different types."
+- Cleo says: "Ava is a knight."
+
+Determine the type of each inhabitant. Show your reasoning, including why the alternative is impossible.
+"""
+
+criteria = """
+Expected answer: Ava is a knight, Ben is a knave, Cleo is a knight.
+
+Reasoning:
+- Suppose Ava is a knight. Then "Ben is a knave" is true, so Ben is a knave.
+  Ben's statement must then be false, so Ava and Cleo are the SAME type,
+  making Cleo a knight. Cleo says "Ava is a knight" — true, as required. Consistent.
+- Suppose Ava is a knave. Then "Ben is a knave" is false, so Ben is a knight.
+  Ben's statement must then be true, so Ava and Cleo are of DIFFERENT types,
+  making Cleo a knight. But Cleo, a knight, says "Ava is a knight", which is
+  false since Ava is a knave. Contradiction — this branch is impossible.
+- Therefore the first branch is the unique solution.
+
+Evaluation criteria:
+- Must reach: Ava = knight, Ben = knave, Cleo = knight
+- Must test both hypotheses rather than asserting one, and must show the second
+  branch reaching an explicit contradiction
+- Reasoning must be internally consistent, with each inhabitant's statement
+  checked against their assigned type
+- Deduct heavily for a wrong assignment
+- Deduct for claiming multiple solutions exist, or for asserting the answer with
+  no elimination of the alternative
+"""
+
+[[checks]]
+type = "contains_all"
+patterns = ["Ava", "Ben", "Cleo"]

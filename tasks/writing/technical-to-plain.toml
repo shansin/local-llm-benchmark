@@ -1,0 +1,49 @@
+category = "writing"
+difficulty = "medium"
+
+prompt = """
+Rewrite the following notice so that a general audience can understand and act on it.
+
+Original:
+"Pursuant to the scheduled infrastructure maintenance window commencing 02:00 UTC on the 14th instant, authentication services will be subject to intermittent unavailability of an anticipated duration not exceeding 90 minutes. Users holding active sessions may experience involuntary session termination and are advised to effect persistence of any in-progress work prior to the aforementioned commencement time. Escalation of service-impacting incidents should be directed through established channels."
+
+Requirements:
+- 90-150 words
+- Lead with what the reader must do, not with the schedule
+- Convert UTC to a form that helps a reader in any timezone
+- Keep every fact from the original: no invented details, no dropped ones
+- Plain language, but not patronising — do not add "don't worry!" reassurance the original does not support
+- End with what to do if something breaks
+"""
+
+criteria = """
+Facts that must survive the rewrite:
+- Maintenance starts 02:00 UTC on the 14th
+- Affects authentication / login services
+- Intermittent unavailability, up to 90 minutes
+- Logged-in users may be logged out without warning
+- Users should save work before it starts
+- Report problems through the existing/normal support channels
+
+Evaluation criteria:
+- 90-150 words
+- The action ("save your work before X") comes first; the schedule is support, not the lead
+- Handles the timezone problem usefully — states 02:00 UTC and gives the reader a way to place it
+  (e.g. "02:00 UTC — check your local time"), rather than silently converting to one timezone
+  and thereby inventing a fact
+- No invented specifics: naming a particular support email, a precise end time, or a cause for
+  the maintenance is a fabrication and should be penalised
+- No dropped facts — losing "intermittent" or "up to 90 minutes" changes what the reader expects
+- Plain but not condescending; no added cheeriness, apology, or emoji the original does not carry
+- Ends with the escalation instruction
+- Reward writing that reads as though a competent person wrote it for adults
+"""
+
+[[checks]]
+type = "word_count"
+min = 80
+max = 170
+
+[[checks]]
+type = "contains_all"
+patterns = ["90"]

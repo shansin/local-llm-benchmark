@@ -1,0 +1,43 @@
+category = "reasoning"
+difficulty = "medium"
+
+prompt = """
+Four talks — Design, Ethics, Metrics, and Scaling — must be scheduled into four consecutive one-hour slots: 9am, 10am, 11am, and 12pm. Exactly one talk per slot.
+
+Constraints:
+1. Scaling is not first and not last.
+2. Design is scheduled at some point before Metrics.
+3. Ethics is immediately after Scaling.
+4. Metrics is not at 10am.
+
+Give the full schedule. Show which constraint eliminates each alternative you consider.
+"""
+
+criteria = """
+Expected answer:
+  9am  — Design
+  10am — Scaling
+  11am — Ethics
+  12pm — Metrics
+
+Reasoning:
+- By constraint 1, Scaling is at 10am or 11am.
+- By constraint 3, Ethics is immediately after Scaling.
+  - If Scaling is at 11am, Ethics is at 12pm, leaving Design and Metrics for 9am and 10am.
+    Constraint 4 forbids Metrics at 10am, so Metrics would be at 9am and Design at 10am —
+    but that violates constraint 2 (Design must precede Metrics). Eliminated.
+  - So Scaling is at 10am and Ethics at 11am.
+- Design and Metrics take 9am and 12pm. Constraint 2 requires Design before Metrics,
+  so Design is at 9am and Metrics at 12pm. Constraint 4 is satisfied.
+
+Evaluation criteria:
+- Must produce exactly the schedule above
+- Must show the elimination of the Scaling-at-11am branch, citing the constraint that kills it
+- All four constraints must be satisfied by the final answer and this should be verifiable from the response
+- Deduct heavily for a wrong schedule or for a schedule that violates any constraint
+- Deduct for asserting the answer without eliminating the alternative branch
+"""
+
+[[checks]]
+type = "contains_all"
+patterns = ["Design", "Scaling", "Ethics", "Metrics"]

@@ -1,9 +1,49 @@
 [project]
 name = "local-llm-benchmark"
-version = "0.1.0"
-description = "Add your description here"
+version = "0.2.0"
+description = "Benchmark locally-running Ollama models on quality and performance"
 requires-python = ">=3.12"
 dependencies = [
+    "pytest>=9.1.1",
     "python-dotenv>=1.2.2",
     "requests>=2.33.1",
 ]
+
+[project.scripts]
+llmbench = "llmbench.cli:main"
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0",
+    "mypy>=1.11",
+    "ruff>=0.6",
+    "types-requests>=2.32",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["llmbench"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+# Reference suites are data, not application code: they run inside the sandbox
+# against a generated `candidate` module that does not exist here.
+extend-exclude = ["tasks"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+
+[tool.mypy]
+python_version = "3.12"
+packages = ["llmbench"]
+disallow_untyped_defs = true
+warn_unused_ignores = true
+warn_redundant_casts = true
+no_implicit_optional = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

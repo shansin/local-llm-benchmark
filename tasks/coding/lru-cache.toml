@@ -1,0 +1,33 @@
+category = "coding"
+difficulty = "hard"
+
+prompt = """
+Implement a Python class called `LRUCache` with a fixed capacity that evicts the least recently used entry when full.
+
+API:
+- `LRUCache(capacity: int)` — create a cache holding at most `capacity` items
+- `get(key)` — return the value, or `-1` if the key is absent. A successful get counts as a use.
+- `put(key, value)` — insert or update. Updating an existing key counts as a use. If the cache is over capacity after inserting, evict the least recently used entry.
+
+Requirements:
+- Both `get` and `put` must run in O(1) average time
+- Include type hints
+- Do not use `functools.lru_cache`; implement the eviction yourself
+- Explain in a comment which data structures give you the O(1) guarantee
+"""
+
+criteria = """
+Evaluation criteria:
+- Class named LRUCache with __init__(capacity), get(key), put(key, value)
+- get returns -1 for a missing key
+- Both operations are O(1) — hash map plus doubly linked list, or collections.OrderedDict with move_to_end
+- A get counts as a use, so it protects an entry from eviction
+- Updating an existing key counts as a use and does not grow the cache
+- Eviction removes the least recently used entry, not the oldest inserted
+- Does not delegate to functools.lru_cache
+- Type hints present; explanation of the O(1) structures given
+"""
+
+[[checks]]
+type = "code_exec"
+suite = "suites/lru_cache_test.py"

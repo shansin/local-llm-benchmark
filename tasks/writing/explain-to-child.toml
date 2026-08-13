@@ -1,0 +1,39 @@
+category = "writing"
+difficulty = "easy"
+
+prompt = """
+Explain to a curious seven-year-old why the sky is blue.
+
+Requirements:
+- 120-200 words
+- Use one concrete analogy a child could picture from everyday life
+- No jargon: do not use the words "scattering", "wavelength", "spectrum", "photon", or "molecule"
+- Stay scientifically accurate despite the simplification
+- End with a question that invites the child to notice something themselves
+"""
+
+criteria = """
+Evaluation criteria:
+- 120-200 words
+- None of the banned words appear: scattering, wavelength, spectrum, photon, molecule
+  (checked case-insensitively, including plurals like "wavelengths")
+- Contains a concrete, everyday analogy a seven-year-old could actually picture — bouncing balls,
+  a crowd, ripples in water. Vague gestures at "tiny things in the air" without an analogy is weaker.
+- Scientifically accurate underneath the simplification: sunlight contains many colours; blue light
+  bounces off the air far more than red light does, so blue arrives at your eye from all over the sky.
+  A response saying the sky reflects the ocean, or that air "is blue", is factually wrong and should
+  be penalised heavily regardless of how charming the prose is.
+- Bonus if it handles the sunset follow-up correctly, but this is not required.
+- Ends with a question directed at the child that prompts their own observation
+- Tone genuinely suited to a seven-year-old: short sentences, warm, not condescending, not babyish
+"""
+
+[[checks]]
+type = "word_count"
+min = 110
+max = 220
+
+[[checks]]
+type = "regex"
+pattern = "(?i)(scattering|wavelength|spectrum|photon|molecule)"
+negate = true

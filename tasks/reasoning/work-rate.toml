@@ -1,0 +1,34 @@
+category = "reasoning"
+difficulty = "easy"
+
+prompt = """
+Three pipes fill a tank.
+
+- Pipe A alone fills the tank in 6 hours.
+- Pipe B alone fills the tank in 4 hours.
+- Pipe C is a drain: alone, it empties a full tank in 12 hours.
+
+All three are opened at the same time on an empty tank.
+
+How long does it take to fill the tank? Show your working and give the answer in hours and minutes.
+"""
+
+criteria = """
+Expected answer: 3 hours exactly.
+
+Working:
+- A fills 1/6 of the tank per hour, B fills 1/4 per hour, C drains 1/12 per hour
+- Net rate = 1/6 + 1/4 - 1/12 = 2/12 + 3/12 - 1/12 = 4/12 = 1/3 of the tank per hour
+- Time = 1 / (1/3) = 3 hours (3 hours 0 minutes)
+
+Evaluation criteria:
+- Final answer must be 3 hours
+- Must combine rates additively, subtracting the drain rate rather than adding it
+- Must show the arithmetic, not just assert the answer
+- Deduct heavily for a wrong final number
+- Deduct if the drain is treated as filling
+"""
+
+[[checks]]
+type = "contains_all"
+patterns = ["3 hour"]

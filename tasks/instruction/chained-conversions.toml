@@ -1,0 +1,36 @@
+category = "instruction"
+difficulty = "medium"
+
+prompt = """
+I need you to perform the following tasks in order and present each result clearly labeled:
+
+1. Convert the decimal number 247 to binary, octal, and hexadecimal.
+2. Take the hexadecimal result and reverse its characters. What decimal number does the reversed hex represent?
+3. List the first 8 prime numbers, then compute their sum.
+4. Take that sum and express it as a Roman numeral.
+5. Finally, create a simple ASCII art representation of the Roman numeral you computed (each character should be at least 3 lines tall).
+"""
+
+criteria = """
+Expected answers:
+1. 247 decimal → binary: 11110111, octal: 367, hexadecimal: F7
+2. Reversed hex F7 → 7F → decimal: 127
+3. First 8 primes: 2, 3, 5, 7, 11, 13, 17, 19 → sum: 77
+4. 77 in Roman numerals: LXXVII
+5. ASCII art of LXXVII (each character at least 3 lines tall)
+
+Evaluation criteria:
+- All 5 conversions/computations must be correct
+- Results must be clearly labeled
+- Tasks must be presented in order
+- Deduct heavily for arithmetic errors
+- The ASCII art must actually depict the letters L, X, X, V, I, I — art that depicts something else, or that is only one line tall, does not satisfy step 5
+"""
+
+[[checks]]
+type = "contains_all"
+patterns = ["11110111", "367", "127", "77", "LXXVII"]
+
+[[checks]]
+type = "contains_any"
+patterns = ["F7", "f7", "0xF7", "0xf7"]

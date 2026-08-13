@@ -1,0 +1,39 @@
+category = "coding"
+difficulty = "medium"
+
+prompt = """
+Write a Python function called `summarize_logs` that takes a list of log line strings and returns a summary dictionary.
+
+Each well-formed log line looks like:
+  `2026-04-11T08:15:30Z LEVEL service_name message text here`
+
+where LEVEL is one of DEBUG, INFO, WARN, ERROR.
+
+The function must return a dict with exactly these keys:
+- `"total"` — number of lines successfully parsed
+- `"malformed"` — number of lines that could not be parsed
+- `"by_level"` — dict mapping each level that appeared to its count
+- `"services"` — sorted list of distinct service names seen
+- `"first_error"` — the message text of the first ERROR line, or None if there were none
+
+Requirements:
+- Malformed lines must be counted, not crash the function
+- Include type hints
+- Do not use regular expressions with catastrophic backtracking; keep it simple
+"""
+
+criteria = """
+Evaluation criteria:
+- Function named summarize_logs taking a list of strings, returning a dict
+- Returns exactly the five specified keys, correctly named
+- total counts only successfully parsed lines; malformed counts the rest
+- by_level omits levels that never appeared (or the judge should accept zero-valued entries only if clearly deliberate)
+- services is sorted and deduplicated
+- first_error is the message text only (not the whole line), and None when no ERROR line exists
+- Malformed input (empty lines, missing fields, unknown level) is handled without raising
+- Type hints present; code is syntactically valid, runnable Python
+"""
+
+[[checks]]
+type = "code_exec"
+suite = "suites/summarize_logs_test.py"

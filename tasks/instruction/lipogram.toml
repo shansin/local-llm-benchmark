@@ -1,0 +1,36 @@
+category = "instruction"
+difficulty = "hard"
+
+prompt = """
+Write a product description for a stainless steel travel mug, in exactly 6 sentences, without ever using the letter "e".
+
+Rules:
+- No word may contain the letter "e", in upper or lower case
+- Exactly 6 sentences, each ending in a full stop
+- Each sentence must be at least 6 words long
+- Do not mention the constraint or comment on the task; output only the description
+
+Check your own work before answering.
+"""
+
+criteria = """
+Evaluation criteria:
+- ZERO occurrences of the letter "e" anywhere in the output. This is the primary criterion: a single "e" is a failure of the task, no matter how good the prose is. Count carefully — common slips are "the", "one", "steel", "temperature", "keeps", "he".
+- Exactly 6 sentences
+- Each sentence at least 6 words
+- No meta-commentary about the constraint, no preamble, no apology, no self-assessment in the output
+- The text must actually read as a product description of a travel mug
+- Grammatical and coherent English despite the constraint
+
+Score primarily on constraint compliance. A fluent description containing three "e"s scores far
+worse than a slightly awkward one containing none.
+"""
+
+[[checks]]
+type = "regex"
+pattern = "[eE]"
+negate = true
+
+[[checks]]
+type = "word_count"
+min = 36

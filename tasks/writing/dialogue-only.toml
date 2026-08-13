@@ -1,0 +1,35 @@
+category = "writing"
+difficulty = "hard"
+
+prompt = """
+Write a scene of 250-350 words consisting entirely of dialogue between two characters.
+
+Constraints:
+- No narration, no action lines, no dialogue tags at all — not even "she said". Only the spoken lines, one per paragraph.
+- The two speakers must be immediately distinguishable by voice alone: vocabulary, rhythm, sentence length, what they refuse to say.
+- The reader must be able to work out, without being told: where they are, what their relationship is, and what happened shortly before the scene starts.
+- One character is trying to avoid a subject; the other keeps returning to it.
+- End on a line that reframes something said earlier.
+"""
+
+criteria = """
+Evaluation criteria — this is the hardest writing task in the set; score strictly:
+- 250-350 words, dialogue only. Any narration, stage direction, or dialogue tag ("he said",
+  "she replied", parenthetical actions) is a constraint failure.
+- Two distinct voices. The test: pick any line at random — is it obvious who said it, without
+  counting alternation? If both characters sound like the same writer, this fails.
+- Setting, relationship, and precipitating event must all be inferable from the dialogue alone,
+  through implication rather than characters announcing exposition to each other
+  ("As you know, we're in the hospital where your father just died" is the failure mode).
+- The avoidance dynamic must be visible: deflection, subject changes, over-answering, silence
+  implied by a non-sequitur reply.
+- The final line must reframe something said earlier — a genuine reversal of meaning, not
+  merely a dramatic closing line.
+- Reward subtext, restraint, and interruption. Penalise melodrama and characters stating
+  their own emotional states directly.
+"""
+
+[[checks]]
+type = "word_count"
+min = 220
+max = 400

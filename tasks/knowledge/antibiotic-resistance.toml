@@ -1,0 +1,29 @@
+category = "knowledge"
+difficulty = "medium"
+
+prompt = """
+Explain how antibiotic resistance arises and spreads. Cover:
+1. The mechanism by which resistance appears in a bacterial population
+2. Why finishing a prescribed course matters, and what actually happens when patients stop early
+3. How resistance genes move between bacteria, including between different species
+4. Why agricultural antibiotic use contributes to resistance in human pathogens
+5. One reason the antibiotic development pipeline has slowed
+
+Keep your answer under 450 words and factually precise.
+"""
+
+criteria = """
+Evaluation criteria:
+1. Resistance arises by random mutation or acquisition of existing resistance genes; antibiotics do not cause the mutation, they select for the already-resistant minority. A response claiming antibiotics induce resistance mutations directly is a major factual error. Note "bacteria become resistant", not "people become resistant" — the latter is a common and serious error.
+2. Stopping early can leave the less-susceptible survivors to repopulate. Credit nuance here: the "always finish the course" advice is contested in current evidence, and some infections do better with shorter courses. A response that presents the classical rationale accurately is correct; one that also notes the ongoing debate is stronger.
+3. Horizontal gene transfer: conjugation (plasmids, the dominant route for resistance genes), transformation (uptake of free DNA), and transduction (phage-mediated). Plasmids and transposons/integrons let genes cross species boundaries.
+4. Agricultural use — especially sub-therapeutic doses for growth promotion — maintains constant selection pressure across huge bacterial populations; resistant organisms and mobile resistance genes reach humans via food, water, and direct contact.
+5. Pipeline reasons: poor return on investment (new antibiotics are held in reserve and used briefly, unlike chronic-disease drugs), difficulty finding novel targets, and expensive trials. Any one of these, stated accurately, suffices.
+
+- Factual precision matters more than breadth here; deduct heavily for the "humans become resistant" or "antibiotics cause the mutations" errors
+- Must be under 450 words
+"""
+
+[[checks]]
+type = "word_count"
+max = 450

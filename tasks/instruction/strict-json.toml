@@ -1,0 +1,57 @@
+category = "instruction"
+difficulty = "medium"
+
+prompt = """
+Extract structured data from the text below and return it as JSON.
+
+Text:
+"The Q3 board meeting ran from 2:15pm to 4:40pm on 14 November 2025 in the Kestrel Room. Priya Raman chaired. Also present: Tom Okafor, Lena Fischer, and one apology from Dan Whitby. The budget motion carried 3 votes to 1."
+
+Return ONLY a JSON object — no prose before it, no prose after it, no markdown code fences. It must have exactly these keys:
+
+- "title": string
+- "date": string in YYYY-MM-DD format
+- "start_time" and "end_time": strings in 24-hour HH:MM format
+- "duration_minutes": integer
+- "location": string
+- "chair": string
+- "attendees": array of strings, not including the chair, not including apologies
+- "apologies": array of strings
+- "vote": object with integer keys "for" and "against"
+
+Do not add any keys that are not listed.
+"""
+
+criteria = """
+Expected JSON (key order does not matter):
+{
+  "title": "Q3 board meeting",
+  "date": "2025-11-14",
+  "start_time": "14:15",
+  "end_time": "16:40",
+  "duration_minutes": 145,
+  "location": "Kestrel Room",
+  "chair": "Priya Raman",
+  "attendees": ["Tom Okafor", "Lena Fischer"],
+  "apologies": ["Dan Whitby"],
+  "vote": {"for": 3, "against": 1}
+}
+
+Evaluation criteria:
+- The response must be ONLY the JSON object. Any prose, preamble, explanation, or markdown code fence is an instruction-following failure and should be penalised heavily even if the JSON itself is perfect.
+- Exactly the ten specified keys, no extras, no omissions
+- date correctly reformatted to 2025-11-14
+- Times converted to 24-hour: 14:15 and 16:40
+- duration_minutes must be 145 (2h25m) — this requires actual arithmetic, not copying
+- attendees excludes both Priya Raman (chair) and Dan Whitby (apology)
+- apologies contains exactly Dan Whitby
+- vote is a nested object with integers, not strings
+- Deduct heavily for any arithmetic or format error
+"""
+
+[[checks]]
+type = "json_valid"
+
+[[checks]]
+type = "contains_all"
+patterns = ["2025-11-14", "14:15", "16:40", "145"]

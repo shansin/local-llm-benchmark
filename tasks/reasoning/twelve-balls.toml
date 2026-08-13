@@ -1,0 +1,34 @@
+category = "reasoning"
+difficulty = "hard"
+
+prompt = """
+You have 12 identical-looking balls. Exactly one is counterfeit: it differs in weight from the other 11, but you do not know whether it is heavier or lighter.
+
+You have a balance scale that compares two groups and tells you which side is heavier, or that they are equal. You may use it exactly three times.
+
+Describe a strategy that always identifies the counterfeit ball AND determines whether it is heavy or light, in three weighings, no matter which ball is counterfeit.
+
+Set out the full decision tree: state what you weigh first, and then what you weigh in every possible outcome branch.
+"""
+
+criteria = """
+Expected: a complete, correct three-weighing strategy.
+
+A standard correct solution:
+- Weighing 1: balls 1-4 against 5-8.
+  - If equal, the counterfeit is among 9-12. Weighing 2: 9,10,11 against 1,2,3 (known good).
+    - Equal: counterfeit is 12; weighing 3 compares 12 against a good ball to get heavy/light.
+    - Left heavy: one of 9,10,11 is heavy; weighing 3 compares 9 against 10 (heavier one is it, or 11 if equal).
+    - Left light: symmetric, one of 9,10,11 is light.
+  - If 1-4 heavy: either one of 1-4 is heavy or one of 5-8 is light. Weighing 2: 1,2,5 against 3,4,6 (or an equivalent split mixing the two candidate groups).
+    - Resolve the remaining three candidates with weighing 3.
+  - If 1-4 light: symmetric to the previous branch.
+
+Evaluation criteria:
+- Must use exactly three weighings and cover EVERY outcome branch (each weighing has three outcomes: left, right, equal)
+- Must identify both WHICH ball is counterfeit and WHETHER it is heavy or light
+- The second weighing in the unbalanced branch must mix balls across the two original groups — a solution that only subdivides one group cannot resolve all 24 possibilities
+- Deduct heavily for a strategy that leaves any branch unresolved, or that only works if you already know the counterfeit is heavy
+- Deduct for solutions that require a fourth weighing in any branch
+- Reward an explicit information-theoretic note (3^3 = 27 >= 24 outcomes) but do not require it
+"""

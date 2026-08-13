@@ -1,0 +1,36 @@
+category = "knowledge"
+difficulty = "medium"
+
+prompt = """
+Explain how the self-attention mechanism in a transformer works, to a reader who understands linear algebra but has not studied deep learning.
+
+Cover:
+1. What queries, keys, and values are, and where they come from
+2. The scaled dot-product attention computation, step by step
+3. Why the scores are divided by the square root of the key dimension
+4. What multi-head attention adds over single-head attention
+5. The computational cost with respect to sequence length, and why that matters
+
+Keep your answer under 500 words. You may use equations.
+"""
+
+criteria = """
+Evaluation criteria:
+1. Q, K, V are each produced by multiplying the input embeddings by a separate learned weight matrix. Every token produces its own query, key, and value vector.
+2. Correct computation: scores = QK^T, scale by 1/sqrt(d_k), apply softmax row-wise to get attention weights, multiply by V. The formula softmax(QK^T / sqrt(d_k))V should appear or be described accurately.
+3. Scaling rationale: for large d_k the dot products grow in magnitude (variance proportional to d_k), pushing softmax into regions with vanishingly small gradients. Dividing by sqrt(d_k) keeps the variance roughly constant.
+4. Multi-head: several attention computations run in parallel on lower-dimensional projections, letting different heads attend to different relationships/positions; outputs are concatenated and projected. Single-head averages these signals together.
+5. Cost is O(n^2 * d) in time and O(n^2) in memory for the attention matrix — quadratic in sequence length, which is what limits context windows and motivates sparse/linear attention variants.
+
+- Must be factually accurate; a wrong formula or wrong complexity is a major error
+- Must be pitched at the stated audience (linear algebra yes, deep learning no)
+- Must be under 500 words
+"""
+
+[[checks]]
+type = "word_count"
+max = 500
+
+[[checks]]
+type = "contains_any"
+patterns = ["softmax", "Softmax"]

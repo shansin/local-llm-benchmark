@@ -1,0 +1,37 @@
+category = "coding"
+difficulty = "hard"
+
+prompt = """
+Write a Python function called `topo_sort` that performs a topological sort of a directed graph.
+
+Signature: `topo_sort(graph)` where `graph` is a dict mapping each node to a list of the nodes it points to (its dependencies-after, i.e. edges go from key to each element).
+
+Return a list of all nodes in an order such that every node appears before the nodes it points to.
+
+If the graph contains a cycle, raise `ValueError` with a message naming at least one node involved in the cycle.
+
+Requirements:
+- Nodes that appear only as targets (never as keys) must still be included in the output
+- Handle the empty graph
+- Include type hints
+- The algorithm must be O(V + E)
+
+Example:
+  topo_sort({"a": ["b"], "b": ["c"], "c": []}) => ["a", "b", "c"]
+"""
+
+criteria = """
+Evaluation criteria:
+- Function named topo_sort taking a dict, returning a list
+- Correct algorithm: Kahn's algorithm with in-degrees, or DFS with post-order reversal — both O(V + E)
+- Every node appears exactly once in the output, including nodes that only ever appear as edge targets
+- Ordering constraint holds: each node precedes all nodes it points to
+- Raises ValueError (not a generic Exception, not returning None) when a cycle exists
+- The cycle error message names at least one node in the cycle
+- Empty graph returns an empty list
+- Type hints present; code is syntactically valid, runnable Python
+"""
+
+[[checks]]
+type = "code_exec"
+suite = "suites/topo_sort_test.py"

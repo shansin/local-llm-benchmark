@@ -1,0 +1,30 @@
+category = "knowledge"
+difficulty = "easy"
+
+prompt = """
+Explain the difference between TCP and UDP. Cover:
+1. What guarantees each protocol provides, and what it does not
+2. The mechanisms TCP uses to provide its guarantees
+3. Why a protocol without those guarantees is sometimes the better choice
+4. One concrete real-world application of each, and why that application chose it
+
+Keep your answer under 400 words.
+"""
+
+criteria = """
+Evaluation criteria:
+- Guarantees: TCP is connection-oriented and provides reliable, ordered, error-checked delivery with flow and congestion control. UDP is connectionless and provides none of these — datagrams may be lost, duplicated, or reordered. Both provide checksums.
+- Mechanisms: three-way handshake for connection setup, sequence numbers for ordering, acknowledgements and retransmission for reliability, sliding window for flow control, congestion control algorithms (slow start, congestion avoidance).
+- Why UDP: lower latency (no handshake, no head-of-line blocking, no retransmission delay), lower overhead (8-byte vs 20-byte header), and for real-time data a late packet is worthless anyway so retransmission is wasted effort. Also supports multicast/broadcast.
+- Applications: TCP for HTTP/file transfer/email where completeness matters more than latency; UDP for DNS queries, live video/voice, or game state updates where speed matters more than completeness. QUIC (over UDP) is a valid modern example if explained correctly.
+- Must be factually accurate; treat "UDP has no error checking at all" as an error (it has a checksum).
+- Must be under 400 words and clearly organized
+"""
+
+[[checks]]
+type = "word_count"
+max = 400
+
+[[checks]]
+type = "contains_all"
+patterns = ["TCP", "UDP"]

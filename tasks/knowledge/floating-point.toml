@@ -1,0 +1,35 @@
+category = "knowledge"
+difficulty = "hard"
+
+prompt = """
+Explain why `0.1 + 0.2 == 0.3` evaluates to False in most programming languages.
+
+Cover:
+1. How IEEE 754 double-precision represents a number, and why 0.1 has no exact representation
+2. What 0.1 + 0.2 actually produces, and why it differs from 0.3
+3. Why `0.5 + 0.25 == 0.75` IS exactly true
+4. Two correct approaches for comparing floating-point values, and when each is appropriate
+5. One category of application where binary floating point is the wrong tool, and what to use instead
+
+Keep your answer under 500 words.
+"""
+
+criteria = """
+Evaluation criteria:
+1. A double is sign + 11-bit exponent + 52-bit stored mantissa, representing a value as a binary fraction times a power of two. 0.1 is 1/10, and since 10 has the prime factor 5, the fraction is non-terminating in binary (like 1/3 in decimal) — so it is rounded to the nearest representable double.
+2. 0.1 and 0.2 each round to slightly-off values; their sum rounds to a double that is a tiny amount above the double nearest 0.3. The classic result is 0.30000000000000004. Credit precision here.
+3. 0.5, 0.25, and 0.75 are all exact dyadic rationals (1/2, 1/4, 3/4) — denominators are powers of two, so they are represented exactly and the arithmetic is exact.
+4. Correct approaches: (a) compare with a tolerance — absolute epsilon for values near zero, relative epsilon otherwise, or ULP-based comparison; (b) avoid floats entirely by using a decimal or rational type. Naming math.isclose / numpy.isclose with an explanation counts. A response that only says "use epsilon" without noting that a fixed absolute epsilon fails for large magnitudes is incomplete.
+5. Money/currency is the canonical answer — use integer minor units (cents) or a decimal type. Other defensible answers: exact geometric predicates, accumulating counters.
+
+- Deduct heavily for claiming the problem is a bug, is language-specific, or comes from "computers not having enough memory"
+- Must be under 500 words
+"""
+
+[[checks]]
+type = "word_count"
+max = 500
+
+[[checks]]
+type = "contains_any"
+patterns = ["0.30000000000000004", "binary", "base 2", "base-2"]

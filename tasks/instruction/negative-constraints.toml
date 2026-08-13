@@ -1,0 +1,40 @@
+category = "instruction"
+difficulty = "easy"
+
+prompt = """
+Summarise the plot of the fairy tale "Little Red Riding Hood".
+
+Constraints:
+- Exactly 5 numbered lines, numbered 1. through 5.
+- Each line must be a complete sentence of between 10 and 15 words
+- Never use the words "wolf", "grandmother", "girl", or "forest", or any plural or possessive form of them
+- Do not use the letter sequence "red" anywhere, including inside other words
+- Do not explain your substitutions or mention these constraints
+
+Output only the five numbered lines.
+"""
+
+criteria = """
+Evaluation criteria — this task tests whether negative constraints survive a familiar narrative,
+so check compliance before quality:
+- Exactly 5 lines, numbered "1." to "5."
+- Each line 10-15 words inclusive
+- The words wolf, grandmother, girl, forest (and their plurals/possessives: wolves, wolf's,
+  grandmothers, girls, forests, ...) must not appear in any case
+- The sequence "red" must not appear anywhere — this catches the title itself, and also
+  "hundred", "covered", "hatred", "predator", "credible". Check inside words, not just word boundaries.
+- No meta-commentary, no preamble, no explanation of the workarounds used
+- Despite the constraints, the five lines must still convey a recognisable version of the plot:
+  the journey, the deception, the substitution, the danger, the resolution
+- Deduct heavily per violated constraint; a fluent summary that says "wolf" once has failed
+"""
+
+[[checks]]
+type = "regex"
+pattern = "(?i)\\b(wolf|wolves|grandmother|girl|forest)"
+negate = true
+
+[[checks]]
+type = "regex"
+pattern = "(?i)red"
+negate = true

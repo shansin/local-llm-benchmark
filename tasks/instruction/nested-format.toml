@@ -1,0 +1,43 @@
+category = "instruction"
+difficulty = "hard"
+
+prompt = """
+Produce a reference card for four sorting algorithms: insertion sort, merge sort, quicksort, and heapsort.
+
+Format requirements — follow all of them exactly:
+
+1. Order the algorithms from best to worst average-case time complexity. Break ties alphabetically.
+2. For each algorithm, output a level-3 markdown heading containing only the algorithm's name in Title Case.
+3. Under each heading, a markdown table with exactly two columns headed `Property` and `Value`, and exactly four rows in this order: Best, Average, Worst, Space.
+4. Every complexity value must be written in the form `O(...)` inside backticks.
+5. After each table, exactly one sentence beginning with the words "Use it when" — no more than 20 words.
+6. After all four sections, add a final level-3 heading `Summary` followed by exactly one bullet list of four items, each of the form `AlgorithmName — stable` or `AlgorithmName — not stable`.
+
+Output nothing else. No introduction, no conclusion.
+"""
+
+criteria = """
+Reference facts:
+- Insertion sort: best O(n), average O(n^2), worst O(n^2), space O(1), stable
+- Merge sort: best O(n log n), average O(n log n), worst O(n log n), space O(n), stable
+- Quicksort: best O(n log n), average O(n log n), worst O(n^2), space O(log n), not stable
+- Heapsort: best O(n log n), average O(n log n), worst O(n log n), space O(1), not stable
+
+Correct ordering by average case, ties broken alphabetically: Heapsort, Merge Sort, Quicksort
+(all O(n log n), alphabetical) then Insertion Sort (O(n^2)) last.
+
+Evaluation criteria — this task is primarily about format compliance, so check each rule:
+- Correct ordering, including the alphabetical tie-break among the three O(n log n) algorithms
+- Level-3 headings (###), name only, Title Case
+- Tables with exactly the columns Property/Value and exactly the four rows in the stated order
+- Every complexity value in backticks and in O(...) form
+- Exactly one "Use it when" sentence per algorithm, at most 20 words
+- Final Summary section with exactly four bullets in the stated form, stability correct for all four
+- No introduction or conclusion text
+- Deduct for each violated rule; a response with all facts right but the wrong ordering or missing
+  backticks has failed the task as specified
+"""
+
+[[checks]]
+type = "contains_all"
+patterns = ["### Summary", "Property", "Value", "Use it when"]

@@ -1,0 +1,30 @@
+category = "coding"
+difficulty = "medium"
+
+prompt = """
+Write a Python function called `merge_intervals` that takes a list of intervals (each represented as a tuple of two integers [start, end]) and merges all overlapping intervals. The function should return the merged intervals sorted by start time.
+
+Requirements:
+- Handle edge cases: empty list, single interval, already sorted, unsorted input
+- Time complexity should be O(n log n)
+- Include type hints
+- Include 5 test cases that cover edge cases
+
+Example:
+  merge_intervals([(1,3), (2,6), (8,10), (15,18)]) => [(1,6), (8,10), (15,18)]
+"""
+
+criteria = """
+Evaluation criteria:
+- Function named merge_intervals accepting list of tuples, returning list of tuples
+- Correct algorithm: sort by start time, then iterate and merge overlapping intervals
+- Time complexity must be O(n log n) — sorting-based approach
+- Must include type hints (e.g., list[tuple[int, int]] or List[Tuple[int, int]])
+- Must include 5 test cases covering: empty list, single interval, already merged/non-overlapping, overlapping intervals, unsorted input
+- Example output must be correct: merge_intervals([(1,3), (2,6), (8,10), (15,18)]) => [(1,6), (8,10), (15,18)]
+- Code should be syntactically valid and runnable Python
+"""
+
+[[checks]]
+type = "code_exec"
+suite = "suites/merge_intervals_test.py"

@@ -1,0 +1,42 @@
+category = "writing"
+difficulty = "hard"
+
+prompt = """
+Write a 300-400 word first-person account in which the narrator describes a day at their new job.
+
+The narrator believes the day went well. The reader must finish the piece certain that it did not.
+
+Constraints:
+- The narrator must never doubt themselves, apologise, or hint that anything is wrong
+- No other character may state the truth plainly — the reader has to assemble it from what the narrator reports without understanding it
+- Include at least three specific details the narrator presents as positive that a reader will read as alarming
+- Do not end with a reveal, a twist line, or the narrator finding out. End inside their confidence.
+"""
+
+criteria = """
+Evaluation criteria — this task tests control of dramatic irony; score strictly:
+- 300-400 words, first person, past or present tense consistently
+- The gap between the narrator's reading and the reader's must be sustained across the whole
+  piece, not created by a single line
+- At least three concrete, specific details that invert on reading: a colleague's reaction the
+  narrator misreads as warmth, a "compliment" that isn't, silence read as agreement. Vague
+  gestures at "everyone seemed happy" do not count — the details must be specific enough that
+  the reader can see the other interpretation clearly.
+- The narrator must never break: no self-doubt, no apology, no wink at the reader, no
+  foreshadowing phrases like "little did I know" or "in hindsight"
+- No character may say the truth outright. A manager saying "we need to talk about your
+  performance" hands it to the reader and fails the constraint.
+- No closing reveal. The piece must end inside the narrator's confidence.
+- Reward restraint and precision of detail. Penalise broad comedy, obvious incompetence played
+  for laughs, and any authorial intrusion.
+"""
+
+[[checks]]
+type = "word_count"
+min = 270
+max = 450
+
+[[checks]]
+type = "regex"
+pattern = "(?i)(little did I know|in hindsight|looking back|I would (later|soon) (learn|find out))"
+negate = true

@@ -1,3 +1,18 @@
+category = "knowledge"
+difficulty = "medium"
+
+prompt = """
+Explain the difference between nuclear fission and nuclear fusion. Cover the following points:
+1. The basic physical process of each
+2. Energy requirements and output
+3. Current real-world applications of each
+4. The main engineering challenges preventing widespread fusion power
+5. Safety considerations for both approaches
+
+Keep your answer factual and concise (under 500 words).
+"""
+
+criteria = """
 Evaluation criteria:
 - Must cover all 5 requested points:
   1. Basic process: fission splits heavy nuclei, fusion combines light nuclei
@@ -8,3 +23,8 @@ Evaluation criteria:
 - Must be factually accurate with no major errors
 - Must be concise (under 500 words)
 - Should be well-organized and clearly address each point
+"""
+
+[[checks]]
+type = "word_count"
+max = 500

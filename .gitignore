@@ -7,8 +7,18 @@ wheels/
 *.egg-info
 
 # Virtual environments
-.venv
+.venv/
+
+# Tool caches. These self-ignore via a generated .gitignore, but only after the
+# tool has run once — name them so a fresh clone is clean regardless.
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
 
 # Config and output
 .env
+.env.*
+!.env.example
 output/
