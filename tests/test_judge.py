@@ -242,3 +242,31 @@ def test_judging_is_deterministic_by_construction(monkeypatch):
     judge.judge_response("http://x", ["j"], "coding", "p", "r")
     assert captured["options"]["temperature"] == 0.0
     assert "format" in captured
+
+
+# ---------- measured facts are given to the judge, not re-derived ----------
+
+
+def test_verified_facts_are_stated_as_ground_truth_in_the_prompt():
+    prompt = judge.build_judge_prompt(
+        "writing",
+        "Write 250 words.",
+        "the response",
+        verified=["word_count: 421 words, within range"],
+    )
+    assert "421 words, within range" in prompt
+    assert "ground truth" in prompt
+
+
+def test_no_verified_section_when_there_is_nothing_measured():
+    assert "ground truth" not in judge.build_judge_prompt("writing", "p", "r")
+
+
+def test_format_verified_skips_checks_that_did_not_run():
+    from llmbench.scoring.judge import format_verified
+
+    checks = [
+        {"type": "word_count", "detail": "300 words, within range", "weight": 1.0},
+        {"type": "code_exec", "detail": "skipped (CODE_EXEC=0)", "weight": 0.0},
+    ]
+    assert format_verified(checks) == ["word_count: 300 words, within range"]

@@ -1,6 +1,12 @@
 import json
 
-from llmbench.report.compare import compare_documents, leaderboard, noise_floor, render_comparison
+from llmbench.report.compare import (
+    comparability,
+    compare_documents,
+    leaderboard,
+    noise_floor,
+    render_comparison,
+)
 from llmbench.report.html import render, write_html
 from llmbench.report.jsonout import build_document, load_json, write_json
 from llmbench.tasks import Task
@@ -203,3 +209,70 @@ def test_leaderboard_over_a_single_run():
 def test_comparison_json_round_trips():
     diff = compare_documents(document("a"), document("b"))
     assert json.loads(json.dumps(diff))["before"] == "a"
+
+
+# ---------- comparability of runs ----------
+
+
+def test_a_changed_judge_panel_is_reported_before_any_delta():
+    """Swapping the judge moves every score at once; a delta then means nothing."""
+    before = document("a", score=8.7)
+    after = document("b", score=8.2)
+    after["config"]["judges"] = ["a-different-judge"]
+    diff = compare_documents(before, after)
+    assert any("judge panel" in note for note in diff["comparability"])
+    rendered = render_comparison(diff)
+    assert "not measured the same way" in rendered
+
+
+def test_a_changed_context_window_is_reported():
+    before = document("a")
+    after = document("b")
+    before["config"]["generation"] = {"num_ctx": 8192}
+    after["config"]["generation"] = {"num_ctx": 32768}
+    assert any("num_ctx" in n for n in comparability(before, after))
+
+
+def test_identical_settings_produce_no_comparability_warning():
+    assert comparability(document("a"), document("b")) == []
+    assert "not measured the same way" not in render_comparison(
+        compare_documents(document("a"), document("b"))
+    )
+
+
+def test_a_changed_task_set_is_reported():
+    before = document("a")
+    after = document("b")
+    after["tasks"].append({"id": "t3", "category": "writing"})
+    assert any("task set" in n and "t3" in n for n in comparability(before, after))
+
+
+def test_leaderboard_warns_when_runs_used_different_judges():
+    first = document("a", score=8.0)
+    second = document("b", score=9.0)
+    second["config"]["judges"] = ["someone-else"]
+    assert "Mixed judges" in leaderboard([first, second])
+
+
+def test_leaderboard_is_quiet_when_the_judge_never_changed():
+    assert "Mixed judges" not in leaderboard([document("a"), document("b")])
+
+
+# ---------- completeness ----------
+
+
+def test_document_records_how_many_generations_were_scorable():
+    doc = build_document(
+        "run",
+        all_results={
+            "m1": {"t1": [gen(), {**gen(), "response": "<think>cut off", "truncated": True}]}
+        },
+        all_details={},
+        judge_scores={},
+        judge_models=["j"],
+        tasks=[task("t1")],
+    )
+    stats = doc["models"][0]["completeness"]
+    assert stats["total"] == 2
+    assert stats["truncated"] == 1
+    assert stats["empty"] == 1

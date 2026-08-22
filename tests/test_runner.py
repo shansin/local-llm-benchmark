@@ -163,3 +163,73 @@ def test_error_reported_inside_the_stream_is_caught(monkeypatch):
     )
     r = run_prompt("http://x", "m", "p", 10)
     assert r["error"] == "HTTPError"
+
+
+# ---------- reasoning channel and truncation ----------
+
+THINKING_STREAM = [
+    {"thinking": "let me work"},
+    {"thinking": " this out"},
+    {"response": "the answer"},
+    {**FINAL, "done_reason": "stop"},
+]
+
+
+def test_thinking_is_captured_separately_from_the_answer(monkeypatch):
+    """A model that puts everything on the thinking channel has not said nothing."""
+    monkeypatch.setattr(requests, "post", lambda *a, **k: _StreamResp(THINKING_STREAM))
+    r = run_prompt("http://x", "m", "p", 10)
+    assert r["response"] == "the answer"
+    assert r["thinking"] == "let me work this out"
+
+
+def test_ttft_ignores_thinking_only_chunks(monkeypatch):
+    """Time to first token means the first token the caller can see."""
+    monkeypatch.setattr(requests, "post", lambda *a, **k: _StreamResp(THINKING_STREAM))
+    assert run_prompt("http://x", "m", "p", 10)["ttft"] > 0
+
+
+def test_done_reason_length_marks_a_generation_as_truncated():
+    assert metrics_from_response({**FINAL, "done_reason": "length"})["truncated"]
+
+
+def test_a_normal_stop_is_not_truncated():
+    assert not metrics_from_response({**FINAL, "done_reason": "stop"}, num_ctx=8192)["truncated"]
+
+
+def test_filling_the_context_window_counts_as_truncation_without_a_done_reason():
+    """Some builds omit done_reason; a full window is the same finding."""
+    payload = {**FINAL, "eval_count": 7998, "prompt_eval_count": 200}
+    assert metrics_from_response(payload, num_ctx=8192)["truncated"]
+    assert not metrics_from_response(payload, num_ctx=32768)["truncated"]
+
+
+def test_thinking_option_is_sent_only_when_asked(monkeypatch):
+    sent = {}
+
+    def capture(url, json=None, **k):
+        sent.update(json or {})
+        return _StreamResp([{"response": "hi"}, FINAL])
+
+    monkeypatch.setattr(requests, "post", capture)
+    run_prompt("http://x", "m", "p", 10)
+    assert "think" not in sent
+    run_prompt("http://x", "m", "p", 10, think=True)
+    assert sent["think"] is True
+
+
+def test_a_model_without_a_thinking_channel_is_measured_anyway(monkeypatch):
+    """Being refused the option is a fact about the model, not a run failure."""
+    calls = []
+
+    def flaky(url, json=None, **k):
+        calls.append(json or {})
+        if "think" in (json or {}):
+            raise requests.exceptions.HTTPError('"thinking" is not supported')
+        return _StreamResp([{"response": "hi"}, FINAL])
+
+    monkeypatch.setattr(requests, "post", flaky)
+    r = run_prompt("http://x", "m", "p", 10, think=True)
+    assert r["error"] is None
+    assert r["response"] == "hi"
+    assert len(calls) == 2

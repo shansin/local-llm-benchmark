@@ -11,10 +11,12 @@ from llmbench.scoring.aggregate import (
     Repeats,
     blend_repeats,
     combined_perf,
+    completeness,
     model_score_stats,
     perf_summary,
     task_score_stats,
 )
+from llmbench.scoring.extract import extraction_for, looks_like_leaked_reasoning
 from llmbench.stats import mean
 from llmbench.sysinfo import get_cpu_info, get_gpu_info, get_ram_info
 from llmbench.tasks import Task, categories_of, group_by_category
@@ -45,6 +47,14 @@ def _fmt_vram(usage: dict[str, float]) -> str:
         return "—"
     spilled = usage.get("offloaded_mib", 0.0)
     return f"{vram:.0f} (+{spilled:.0f} RAM)" if spilled > 1 else f"{vram:.0f}"
+
+
+def _num_ctx_of(gen: GenerationParams | dict[str, Any] | None) -> int | None:
+    if gen is None:
+        return None
+    values = gen if isinstance(gen, dict) else gen.to_options()
+    ctx = values.get("num_ctx")
+    return int(ctx) if ctx else None
 
 
 def _params_line(gen: GenerationParams | dict[str, Any] | None) -> str:
@@ -153,9 +163,39 @@ def write_model_benchmark(
             cat_md += f"- Prefill tok/s: {r.get('prompt_eval_speed', 0.0):.1f}\n"
             cat_md += f"- TTFT: {r['ttft']:.2f}s\n"
             cat_md += f"- Gen Time: {r['total_time']:.2f}s\n"
-            cat_md += f"- Output Tokens: {r['eval_count']}\n\n"
-            cat_md += f"**Response:**\n\n{r['response']}\n\n"
+            cat_md += f"- Output Tokens: {r['eval_count']}\n"
+            cat_md += _answer_provenance(r)
+            cat_md += "\n"
+            extraction = extraction_for(r)
+            if extraction.reasoning:
+                # The reasoning is kept, folded away. It is what a model that
+                # never reached an answer spent its context on, and reading it
+                # is the fastest way to tell a stuck model from a slow one.
+                cat_md += (
+                    "<details><summary>Reasoning "
+                    f"({len(extraction.reasoning)} chars, not scored)</summary>\n\n"
+                    f"{extraction.reasoning}\n\n</details>\n\n"
+                )
+            cat_md += f"**Answer (as scored):**\n\n{extraction.answer or '_(none)_'}\n\n"
         (model_dir / f"{task.id}.md").write_text(cat_md)
+
+
+def _answer_provenance(result: dict[str, Any]) -> str:
+    """One line on how this response was read, when that is not obvious.
+
+    Silent by default: on a model that simply answers the prompt there is
+    nothing to explain, and a note on every response would train the reader to
+    skip the ones that matter.
+    """
+    extraction = extraction_for(result)
+    notes = []
+    if result.get("truncated") or not extraction.complete:
+        notes.append("**truncated** — stopped at the context limit, not by choice")
+    if extraction.source not in ("verbatim",):
+        notes.append(f"answer read from `{extraction.source}`")
+    if looks_like_leaked_reasoning(extraction):
+        notes.append("**opens with planning prose** — checks are measuring the reasoning")
+    return "".join(f"- {note}\n" for note in notes)
 
 
 def _system_info_section() -> str:
@@ -243,6 +283,62 @@ def _prefill_section(prefill_results: dict[str, dict[str, Repeats]]) -> str:
     return md + _table(["Model", *[f"~{n} tok" for n in lengths]], rows)
 
 
+def _completeness_section(all_results: dict[str, dict[str, Repeats]], num_ctx: int | None) -> str:
+    """How many generations produced a scorable answer at all.
+
+    Without this, an absent answer and a wrong answer are the same number in
+    the quality table. They are not the same finding: one is about the model,
+    the other is usually about the context window this run was configured with.
+    """
+    stats = {model: completeness(results) for model, results in all_results.items()}
+    if not any(
+        s["truncated"] or s["empty"] or s["errors"] or s["leaked_reasoning"] for s in stats.values()
+    ):
+        return ""
+
+    md = "\n## Answer completeness\n\n"
+    md += (
+        "Generations that produced nothing to score, and generations whose answer "
+        "arrived buried in undelimited reasoning. Both distort scores in ways the "
+        "quality table cannot show.\n\n"
+    )
+    rows = [
+        [
+            model,
+            f"{s['total']:.0f}",
+            f"{s['truncated']:.0f}",
+            f"{s['empty']:.0f}",
+            f"{s['leaked_reasoning']:.0f}",
+            f"{s['errors']:.0f}",
+        ]
+        for model, s in stats.items()
+    ]
+    md += _table(
+        ["Model", "Generations", "Truncated", "No answer", "Leaked reasoning", "Errors"], rows
+    )
+
+    if any(s["truncated"] for s in stats.values()):
+        limit = f"`num_ctx={num_ctx}`" if num_ctx else "the configured context window"
+        md += (
+            f"\n**Truncated** generations hit {limit} and stopped mid-thought. They are "
+            "scored as missing answers, because that is what they are — not as wrong "
+            "ones. Raise `NUM_CTX` and re-run before reading those rows as quality.\n"
+        )
+    if any(s["leaked_reasoning"] for s in stats.values()):
+        md += (
+            "\n**Leaked reasoning** counts answers that begin with first-person planning "
+            "prose rather than the answer itself, with no `<think>` tags to separate the "
+            "two. Every deterministic check then measures the planning notes: a 260-word "
+            "scene is counted at 4311 words, and a *never write the word 'wolf'* "
+            "constraint fails on the line where the model reminded itself not to. The "
+            "judge, reading further down, scores the real answer — which is why such a "
+            "model shows a large positive judge-calibration figure and a depressed "
+            "objective score at the same time. Re-run it with `--answer-tags` to score "
+            "the answer instead of the deliberation.\n"
+        )
+    return md
+
+
 def write_results(
     run_dir: Path,
     all_results: dict[str, dict[str, Repeats]],
@@ -291,6 +387,7 @@ def write_results(
         all_results, all_details, perf_results, cold_loads, task_keys, model_vram or {}
     )
     md += _prefill_section(prefill_results or {})
+    md += _completeness_section(all_results, _num_ctx_of(gen_params))
 
     # ---- Quality by category ----
     md += "\n## Quality\n\n"

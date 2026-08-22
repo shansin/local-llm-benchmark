@@ -82,6 +82,32 @@ Keeping both means the report can show a **judge calibration table**: how far th
 sits from the measured result, per category. That number tells you how much to trust the judge on
 the tasks where nothing can be measured.
 
+The two halves are given the same text and a clean division of labour. Whatever the checks measured
+is handed to the judge as settled fact — language models cannot count letters or words reliably,
+and asking them to try produces confident nonsense, so the measurable half of a rubric is measured
+and the judge scores only the half that cannot be.
+
+### What gets scored
+
+Not every response contains an answer, and the difference matters more than it looks:
+
+- **Reasoning is separated from the answer** before anything is scored. `<think>` tags and Ollama's
+  separate `thinking` channel are both recognised, and the reasoning is kept in the per-task report
+  (folded away) rather than discarded.
+- **A generation that ran out of context is not a wrong answer.** Truncated generations are
+  detected, scored as missing, and counted in an **answer completeness** table with the `num_ctx`
+  that caused them — not silently averaged in as near-zeros that look like a model being bad at
+  puzzles.
+- **An empty answer fails every check, including the negated ones.** "Must not contain the word
+  *wolf*" is otherwise satisfied by silence, which used to hand a model that produced nothing a
+  10/10 on the constraint half of a task.
+- **Judges are never shown an empty response.** Asked to score nothing, they invent something to
+  score; one reported that an empty response "contains many 'e' letters".
+- **Undelimited reasoning is counted and named.** A model that answers with planning prose and no
+  tags gets its checks run over the planning prose — a 260-word scene counted at 4311 words. The
+  report counts those responses as **leaked reasoning** instead of leaving a mysterious score gap.
+  `--answer-tags` is the remedy.
+
 The coding suites are the benchmark's tests, not the model's — a model cannot raise its own score
 by writing weak tests.
 
@@ -110,6 +136,12 @@ per-repeat records alongside the summary statistics, so any number in the report
 and old runs can be re-analysed without re-running anything.
 
 ### Comparing runs
+
+Two runs are only comparable if they were measured the same way. `compare` reports any difference
+in the judge panel, sampling settings, blend weight, prompt mode, or task set **before** it reports
+a single delta, and `--all` warns when it is pooling runs scored by different judges — swapping the
+judge moves every score in the table at once, in a direction no per-model reading can recover.
+
 
 ```bash
 uv run benchmark.py compare output/<before> output/<after>   # what changed
@@ -154,7 +186,7 @@ Copy `.env.example` to `.env` (or just set environment variables directly):
 | `TEMPERATURE` | `0.0` | Sampling temperature |
 | `TOP_P` / `TOP_K` | `1.0` / `40` | Sampling cutoffs |
 | `SEED` | `0` | Base seed; repeat *i* uses `SEED + i` |
-| `NUM_CTX` | `8192` | Context window — set explicitly, or Ollama silently truncates |
+| `NUM_CTX` | `32768` | Context window — set explicitly, or Ollama silently truncates. Too small and reasoning models are cut off before they answer |
 | `QUALITY_REPEATS` | `3` | Times each prompt is answered |
 | `RETRIES` | `3` | Retries on connection errors (timeouts are never retried) |
 | `PERF_PROBE` | `true` | Run the dedicated throughput probe |
@@ -164,6 +196,8 @@ Copy `.env.example` to `.env` (or just set environment variables directly):
 | `PREFILL_REPEATS` | `2` | Samples per sweep point |
 | `OBJECTIVE_WEIGHT` | `0.6` | Weight of deterministic checks in the blended score |
 | `CODE_EXEC` | `1` | Set to `0` to never execute model-generated code |
+| `THINK` | `auto` | `1`/`0` to force Ollama's separate thinking channel on or off |
+| `ANSWER_TAGS` | `0` | Ask for the final answer inside `<answer></answer>` |
 | `TASKS_DIR` | `./tasks` | Task directory |
 
 Prompt failures (timeout, connection error, HTTP error) are recorded as results rather than
@@ -192,6 +226,8 @@ uv run benchmark.py                    # full run
 uv run benchmark.py --quick            # 1 repeat, no throughput probe — smoke test
 uv run benchmark.py --repeats 5        # tighter noise estimate, 5x the cost
 uv run benchmark.py --no-perf-probe    # skip throughput measurement only
+uv run benchmark.py --answer-tags      # score the answer, not the model's deliberation
+uv run benchmark.py --think            # reasoning on Ollama's separate channel
 uv run benchmark.py list-models        # what Ollama has available
 uv run benchmark.py validate           # check the task set
 uv run benchmark.py compare A B        # diff two runs

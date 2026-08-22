@@ -27,6 +27,57 @@ def noise_floor(document: dict[str, Any]) -> float:
     return max(spreads) if spreads else 0.0
 
 
+# Settings that have to match before two runs' scores mean the same thing.
+# The judge panel is the sharpest of them: swapping the judge moves every score
+# in the table at once, in a direction no per-model reading can recover.
+_COMPARABILITY_KEYS = (
+    ("judges", "judge panel"),
+    ("objective_weight", "objective/judge blend"),
+    ("repeats", "repeats per prompt"),
+    ("answer_tags", "answer-tag prompting"),
+    ("think", "thinking channel"),
+)
+_GENERATION_KEYS = ("num_ctx", "temperature", "top_p", "top_k", "seed")
+
+
+def comparability(before: dict[str, Any], after: dict[str, Any]) -> list[str]:
+    """Differences in how two runs were measured, not in what they measured.
+
+    A benchmark's whole purpose is noticing change, which makes a silent change
+    in the instrument the one failure it cannot survive. Two runs of this suite
+    a week apart used different judge models; the leaderboard showed a model
+    dropping half a point and offered no way to tell that from a regression.
+    """
+    old_config = before.get("config", {})
+    new_config = after.get("config", {})
+    notes = []
+
+    for key, label in _COMPARABILITY_KEYS:
+        old_value, new_value = old_config.get(key), new_config.get(key)
+        if old_value != new_value:
+            notes.append(f"{label}: `{old_value}` → `{new_value}`")
+
+    old_gen = old_config.get("generation", {}) or {}
+    new_gen = new_config.get("generation", {}) or {}
+    for key in _GENERATION_KEYS:
+        if key in old_gen and key in new_gen and old_gen[key] != new_gen[key]:
+            notes.append(f"{key}: `{old_gen[key]}` → `{new_gen[key]}`")
+
+    old_tasks = {t["id"] for t in before.get("tasks", [])}
+    new_tasks = {t["id"] for t in after.get("tasks", [])}
+    if old_tasks != new_tasks:
+        added = sorted(new_tasks - old_tasks)
+        removed = sorted(old_tasks - new_tasks)
+        parts = []
+        if added:
+            parts.append(f"added {', '.join(added)}")
+        if removed:
+            parts.append(f"removed {', '.join(removed)}")
+        notes.append(f"task set: {'; '.join(parts)}")
+
+    return notes
+
+
 def _verdict(delta: float, threshold: float) -> str:
     if abs(delta) <= threshold:
         return SAME
@@ -78,6 +129,7 @@ def compare_documents(before: dict[str, Any], after: dict[str, Any]) -> dict[str
         "before": before.get("run"),
         "after": after.get("run"),
         "noise_threshold": threshold,
+        "comparability": comparability(before, after),
         "models": rows,
     }
 
@@ -112,6 +164,18 @@ def _compare_tasks(
 def render_comparison(diff: dict[str, Any]) -> str:
     """Render a comparison as markdown."""
     lines = [f"# Comparison — {diff['before']} → {diff['after']}", ""]
+
+    changes = diff.get("comparability") or []
+    if changes:
+        lines += [
+            "> **These runs were not measured the same way.** The differences below "
+            "move scores on their own, so a delta in this comparison is not "
+            "necessarily a change in the models:",
+            "",
+        ]
+        lines += [f"> - {note}" for note in changes]
+        lines.append("")
+
     threshold = diff["noise_threshold"]
     if threshold:
         lines.append(
@@ -174,6 +238,18 @@ def leaderboard(documents: list[dict[str, Any]]) -> str:
                 }
 
     lines = [f"# Leaderboard across {len(documents)} run(s)", ""]
+
+    panels = {
+        ", ".join(document.get("config", {}).get("judges", []) or ["?"]) for document in documents
+    }
+    if len(panels) > 1:
+        lines += [
+            "> **Mixed judges.** These runs were scored by different judge panels "
+            f"({'; '.join(sorted(panels))}), so a best-of across them partly ranks "
+            "which judge was most generous. Compare runs sharing a panel instead.",
+            "",
+        ]
+
     lines.append("| Model | Best score | Tok/s | VRAM (MiB) | From run |")
     lines.append("|-------|------------|-------|------------|----------|")
     for name, entry in sorted(best.items(), key=lambda kv: kv[1]["score"], reverse=True):

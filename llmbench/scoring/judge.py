@@ -48,16 +48,44 @@ class JudgeResult(TypedDict):
     response_chars: int
 
 
+def format_verified(checks: list[dict[str, Any]]) -> list[str]:
+    """Render check results as plain statements of fact for the judge."""
+    return [f"{c['type']}: {c['detail']}" for c in checks if c.get("weight", 1.0) > 0]
+
+
 def build_judge_prompt(
-    category: str, prompt_text: str, response_text: str, expected_text: str = ""
+    category: str,
+    prompt_text: str,
+    response_text: str,
+    expected_text: str = "",
+    verified: list[str] | None = None,
 ) -> str:
-    """Build the judging prompt. The model under test is never named."""
+    """Build the judging prompt. The model under test is never named.
+
+    Anything already measured is handed to the judge as settled fact. Language
+    models cannot count letters or words reliably, and asking them to try
+    produces confident nonsense: on one task the checks recorded a response as
+    421 words inside the limit while the judge failed it for length, and on
+    another the judge's stated reasoning was six lines of it counting the same
+    sentence twice. The measurable half of a rubric should be measured, and the
+    judge left to score the half that cannot be.
+    """
     expected_section = ""
     guidance = "Evaluate based on accuracy, completeness, instruction following, and clarity."
     if expected_text:
         expected_section = f"\nExpected answer / evaluation criteria:\n{expected_text}\n"
         guidance += (
             " Use the expected answer and evaluation criteria above as your primary scoring guide."
+        )
+
+    verified_section = ""
+    if verified:
+        facts = "\n".join(f"- {fact}" for fact in verified)
+        verified_section = (
+            "\nAutomated checks already measured the following. Treat these as "
+            "ground truth: do not re-count words or letters yourself, and do not "
+            "contradict them. Score the qualities they cannot capture.\n"
+            f"{facts}\n"
         )
 
     dimensions = "\n".join(f'  "{d}": <integer 1-10>,' for d in DIMENSIONS)
@@ -71,7 +99,7 @@ Category: {category}
 
 Original prompt:
 {prompt_text}
-{expected_section}
+{expected_section}{verified_section}
 AI response:
 {response_text}
 
@@ -153,10 +181,11 @@ def judge_once(
     expected_text: str = "",
     timeout: int = 1800,
     params: GenerationParams | None = None,
+    verified: list[str] | None = None,
 ) -> JudgeResult:
     """Ask one judge model to score one response."""
     params = params or JUDGE_PARAMS
-    judge_prompt = build_judge_prompt(category, prompt_text, response_text, expected_text)
+    judge_prompt = build_judge_prompt(category, prompt_text, response_text, expected_text, verified)
 
     try:
         resp = requests.post(
@@ -214,6 +243,7 @@ def judge_response(
     params: GenerationParams | None = None,
     model_under_test: str | None = None,
     allow_self_judge: bool = False,
+    verified: list[str] | None = None,
 ) -> JudgeResult:
     """Collect a panel's verdicts and return the median.
 
@@ -243,6 +273,7 @@ def judge_response(
             expected_text,
             timeout,
             params,
+            verified,
         )
         votes.append({"judge": judge_model, **verdict})
 

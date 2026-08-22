@@ -29,9 +29,23 @@ class GenResult(TypedDict):
     number a user actually waits. The server-reported components are kept
     alongside it: `prefill_time` (prompt evaluation) and `load_time` (model
     load), so a cold first prompt can be told apart from a slow one.
+
+    `thinking` holds the chain of thought when Ollama streams it on its own
+    channel. It has to be captured: a reasoning model that puts everything
+    there and never reaches a visible answer is indistinguishable, from
+    `response` alone, from a model that returned nothing — and the second
+    reading is the one that quietly lands in the scores.
+
+    `truncated` marks a generation that stopped because it ran out of room
+    rather than because the model was finished. Those are not bad answers, they
+    are absent ones, and a benchmark that averages them in as zeros is
+    reporting its own context setting as a property of the model.
     """
 
     response: str
+    thinking: str
+    done_reason: str
+    truncated: bool
     tokens_per_sec: float
     ttft: float
     prefill_time: float
@@ -48,6 +62,9 @@ class GenResult(TypedDict):
 def _failed(marker: str, error: str, seed: int | None = None) -> GenResult:
     return {
         "response": marker,
+        "thinking": "",
+        "done_reason": "",
+        "truncated": False,
         "tokens_per_sec": 0.0,
         "ttft": 0.0,
         "prefill_time": 0.0,
@@ -63,7 +80,11 @@ def _failed(marker: str, error: str, seed: int | None = None) -> GenResult:
 
 
 def metrics_from_response(
-    data: dict[str, Any], text: str | None = None, client_ttft: float | None = None
+    data: dict[str, Any],
+    text: str | None = None,
+    client_ttft: float | None = None,
+    thinking: str = "",
+    num_ctx: int | None = None,
 ) -> GenResult:
     """Convert an Ollama /api/generate payload into a GenResult."""
     eval_duration = data.get("eval_duration", 0)
@@ -76,6 +97,9 @@ def metrics_from_response(
     prefill_time = prompt_eval_duration / 1e9
     return {
         "response": data.get("response", "") if text is None else text,
+        "thinking": thinking or str(data.get("thinking") or ""),
+        "done_reason": str(data.get("done_reason") or ""),
+        "truncated": _hit_the_wall(data, eval_count, prompt_eval_count, num_ctx),
         "tokens_per_sec": (eval_count / eval_duration * 1e9) if eval_duration > 0 else 0.0,
         # Without a streamed measurement, the best available estimate of the
         # user-visible wait is load + prefill.
@@ -94,10 +118,30 @@ def metrics_from_response(
     }
 
 
+def _rejected_thinking(exc: Exception) -> bool:
+    """Is this failure Ollama saying the model has no thinking channel?"""
+    return "think" in str(exc).lower()
+
+
+def _hit_the_wall(
+    data: dict[str, Any], eval_count: int, prompt_eval_count: int, num_ctx: int | None
+) -> bool:
+    """Did this generation stop for lack of room rather than because it finished?
+
+    Ollama says so directly with `done_reason: "length"`. The context check is a
+    belt-and-braces second reading for builds that omit the reason: a
+    generation whose prompt and output together fill the window did not choose
+    to stop. The margin absorbs the handful of tokens the template adds.
+    """
+    if str(data.get("done_reason") or "").lower() == "length":
+        return True
+    return bool(num_ctx and eval_count and prompt_eval_count + eval_count >= num_ctx - 16)
+
+
 def _stream_generate(
     base_url: str, payload: dict[str, Any], timeout: int
-) -> tuple[str, dict[str, Any], float | None]:
-    """POST a streaming generate request, returning (text, final_payload, ttft)."""
+) -> tuple[str, str, dict[str, Any], float | None]:
+    """POST a streaming request, returning (text, thinking, final_payload, ttft)."""
     start = time.monotonic()
     resp = requests.post(
         f"{base_url}/api/generate", json={**payload, "stream": True}, timeout=timeout, stream=True
@@ -105,6 +149,7 @@ def _stream_generate(
     resp.raise_for_status()
 
     chunks: list[str] = []
+    thoughts: list[str] = []
     ttft: float | None = None
     final: dict[str, Any] = {}
 
@@ -115,6 +160,13 @@ def _stream_generate(
         if obj.get("error"):
             raise requests.exceptions.HTTPError(str(obj["error"]))
         piece = obj.get("response", "")
+        # Reasoning models stream their chain of thought on a separate channel.
+        # It is kept apart from the answer but not thrown away: it is the only
+        # evidence of what a model that never reached an answer spent its
+        # context on.
+        thought = obj.get("thinking", "")
+        if thought:
+            thoughts.append(thought)
         if piece:
             if ttft is None:
                 ttft = time.monotonic() - start
@@ -126,7 +178,7 @@ def _stream_generate(
             resp.close()
             raise requests.exceptions.ReadTimeout("exceeded total prompt timeout")
 
-    return "".join(chunks), final, ttft
+    return "".join(chunks), "".join(thoughts), final, ttft
 
 
 def run_prompt(
@@ -136,6 +188,7 @@ def run_prompt(
     timeout: int,
     params: GenerationParams | None = None,
     retries: int = 3,
+    think: bool | None = None,
 ) -> GenResult:
     """Run a prompt against a model and return its response plus metrics.
 
@@ -145,12 +198,18 @@ def run_prompt(
     finish in the allotted time is a finding, not a flake.
     """
     params = params or GenerationParams()
-    payload = {"model": model_name, "prompt": prompt_text, "options": params.to_options()}
+    payload: dict[str, Any] = {
+        "model": model_name,
+        "prompt": prompt_text,
+        "options": params.to_options(),
+    }
+    if think is not None:
+        payload["think"] = think
 
     last_error = "unknown"
     for attempt in range(retries):
         try:
-            text, final, ttft = _stream_generate(base_url, payload, timeout)
+            text, thinking, final, ttft = _stream_generate(base_url, payload, timeout)
         except requests.exceptions.Timeout:
             print("timeout, skipping.")
             return _failed("[TIMEOUT]", "timeout", params.seed)
@@ -160,11 +219,24 @@ def run_prompt(
                 time.sleep(2**attempt)
                 continue
         except requests.exceptions.RequestException as exc:
+            if "think" in payload and _rejected_thinking(exc):
+                # Not every model supports the thinking channel. Asking for it
+                # and being refused is a fact about the model, not a run
+                # failure: drop the option and measure it as it comes.
+                print("(no thinking channel) ", end="", flush=True)
+                payload.pop("think")
+                continue
             detail = type(exc).__name__
             print(f"failed ({detail}), skipping.")
             return _failed(f"[ERROR: {detail}]", detail, params.seed)
         else:
-            result = metrics_from_response(final, text=text, client_ttft=ttft)
+            result = metrics_from_response(
+                final,
+                text=text,
+                client_ttft=ttft,
+                thinking=thinking,
+                num_ctx=params.num_ctx,
+            )
             result["seed"] = params.seed
             return result
 

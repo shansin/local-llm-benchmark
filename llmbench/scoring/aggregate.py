@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from llmbench.scoring.extract import extraction_for, looks_like_leaked_reasoning
 from llmbench.stats import iqr, mean, median, percentile, stdev
 
 Repeats = list[dict[str, Any]]
@@ -34,6 +35,38 @@ def perf_summary(results: Repeats) -> dict[str, float]:
         "tokens_median": median([float(r["eval_count"]) for r in ok]),
         "samples": float(len(ok)),
         "failures": float(len(results) - len(ok)),
+    }
+
+
+def completeness(results_by_task: dict[str, Repeats]) -> dict[str, float]:
+    """Count the generations that produced no answer, and why.
+
+    Quality tables average scores; they cannot show that a score is low because
+    the answer was absent. These three counts are what separates "answered
+    badly" from "never answered", and the second is usually a fact about the
+    run's configuration rather than about the model.
+    """
+    total = truncated = empty = leaked = errors = 0
+    for repeats in results_by_task.values():
+        for result in repeats:
+            total += 1
+            if result.get("error"):
+                errors += 1
+                continue
+            extraction = extraction_for(result)
+            if result.get("truncated") or not extraction.complete:
+                truncated += 1
+            if extraction.empty:
+                empty += 1
+            elif looks_like_leaked_reasoning(extraction):
+                leaked += 1
+
+    return {
+        "total": float(total),
+        "truncated": float(truncated),
+        "empty": float(empty),
+        "leaked_reasoning": float(leaked),
+        "errors": float(errors),
     }
 
 

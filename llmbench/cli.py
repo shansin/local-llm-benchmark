@@ -18,8 +18,13 @@ from llmbench.report.html import write_html
 from llmbench.report.jsonout import build_document, write_json
 from llmbench.report.markdown import write_model_benchmark, write_results
 from llmbench.runner import run_perf_probe, run_prefill_sweep, run_prompt, warm_up
-from llmbench.scoring.aggregate import perf_summary
-from llmbench.scoring.judge import judge_response
+from llmbench.scoring.aggregate import completeness, perf_summary
+from llmbench.scoring.extract import (
+    extraction_for,
+    no_answer_reason,
+    with_answer_format,
+)
+from llmbench.scoring.judge import JudgeResult, format_verified, judge_response
 from llmbench.scoring.objective import objective_score, run_checks
 from llmbench.state import STATE_FILE, load_state, save_state
 from llmbench.tasks import TaskError, categories_of, group_by_category, load_tasks
@@ -264,6 +269,24 @@ def cmd_run(args: argparse.Namespace, config: Config) -> int:  # noqa: PLR0915
             "distinguishable from sampling variation."
         )
 
+    def prompt_for(task: Any) -> str:
+        """The text actually sent for a task.
+
+        With ANSWER_TAGS on, every prompt carries the same answer-delimiter
+        instruction. It has to be applied identically at generation and judging
+        time, or the judge scores a prompt the model never saw.
+        """
+        return with_answer_format(task.prompt) if config.answer_tags else task.prompt
+
+    if config.answer_tags:
+        print(
+            "Answer tags: on — prompts ask for the final answer inside "
+            "<answer></answer>. This changes the prompt, so scores are not "
+            "comparable with runs made without it."
+        )
+    if config.think is not None:
+        print(f"Thinking channel: requested {'on' if config.think else 'off'} for every model.")
+
     session_start = time.monotonic()
 
     def current_elapsed() -> float:
@@ -372,15 +395,18 @@ def cmd_run(args: argparse.Namespace, config: Config) -> int:  # noqa: PLR0915
                 result = run_prompt(
                     config.base_url,
                     model_name,
-                    task.prompt,
+                    prompt_for(task),
                     config.prompt_timeout,
                     config.gen.for_repeat(rep),
                     retries=config.retries,
+                    think=config.think,
                 )
                 done.append(result)
                 if result["error"] is None:
+                    note = " TRUNCATED" if result.get("truncated") else ""
                     print(
-                        f"done ({result['tokens_per_sec']:.1f} tok/s, {result['total_time']:.1f}s)"
+                        f"done ({result['tokens_per_sec']:.1f} tok/s, "
+                        f"{result['total_time']:.1f}s){note}"
                     )
                 checkpoint()
 
@@ -425,9 +451,12 @@ def cmd_run(args: argparse.Namespace, config: Config) -> int:  # noqa: PLR0915
                         end=" ",
                         flush=True,
                     )
-                    checks = run_checks(task, answers[rep]["response"], config.code_exec)
+                    extraction = extraction_for(answers[rep])
+                    checks = run_checks(task, extraction.answer, config.code_exec)
                     score = objective_score(checks)
-                    done.append({"score": score, "checks": checks})
+                    done.append(
+                        {"score": score, "checks": checks, "answer_source": extraction.source}
+                    )
                     print("—" if score is None else f"{score:.1f}/10")
                     checkpoint()
 
@@ -454,18 +483,34 @@ def cmd_run(args: argparse.Namespace, config: Config) -> int:  # noqa: PLR0915
                     end=" ",
                     flush=True,
                 )
-                verdict = judge_response(
-                    config.base_url,
-                    judge_names,
-                    task.category,
-                    task.prompt,
-                    answers[rep]["response"],
-                    task.criteria,
-                    timeout=config.judge_timeout,
-                    params=JUDGE_PARAMS,
-                    model_under_test=model_name,
-                    allow_self_judge=config.allow_self_judge,
-                )
+                extraction = extraction_for(answers[rep])
+                if extraction.empty:
+                    # Never hand an empty string to a judge. Asked to score
+                    # nothing, judges reliably invent something to score — one
+                    # reported that an empty response "contains many 'e'
+                    # letters". A missing answer is a determinable outcome, so
+                    # it is scored here rather than guessed at.
+                    verdict: JudgeResult = {
+                        "score": 1.0,
+                        "reason": no_answer_reason(answers[rep], extraction),
+                        "dimensions": {},
+                        "votes": [],
+                        "response_chars": 0,
+                    }
+                else:
+                    verdict = judge_response(
+                        config.base_url,
+                        judge_names,
+                        task.category,
+                        prompt_for(task),
+                        extraction.answer,
+                        task.criteria,
+                        timeout=config.judge_timeout,
+                        params=JUDGE_PARAMS,
+                        model_under_test=model_name,
+                        allow_self_judge=config.allow_self_judge,
+                        verified=_verified_facts(objective_scores, model_name, task.key, rep),
+                    )
                 verdicts.append(verdict)
                 score = verdict["score"]
                 print(f"{score:.1f}/10" if score is not None else "unscored")
@@ -519,11 +564,16 @@ def cmd_run(args: argparse.Namespace, config: Config) -> int:  # noqa: PLR0915
         config.objective_weight,
         prefill_results,
         model_vram,
+        config.answer_tags,
+        config.think,
     )
     write_json(run_dir, document)
     write_html(run_dir, document)
 
     checkpoint()
+
+    _report_incomplete(all_results, config.gen.num_ctx)
+
     print(f"\n{'═' * 50}")
     print(f"  Results saved to: {run_dir / 'results.md'}")
     print(f"  Data:             {run_dir / 'results.json'}")
@@ -531,6 +581,47 @@ def cmd_run(args: argparse.Namespace, config: Config) -> int:  # noqa: PLR0915
     print(f"  Total runtime: {format_duration(total_runtime)}")
     print(f"{'═' * 50}")
     return 0
+
+
+def _verified_facts(
+    objective_scores: dict[str, Any], model_name: str, task_key: str, rep: int
+) -> list[str]:
+    """What the deterministic checks already established about this response."""
+    entries = objective_scores.get(model_name, {}).get(task_key, [])
+    if rep >= len(entries):
+        return []
+    return format_verified(entries[rep].get("checks", []))
+
+
+def _report_incomplete(all_results: dict[str, Any], num_ctx: int) -> None:
+    """Say plainly which results are absent answers rather than bad ones.
+
+    A truncated generation scores near zero and looks exactly like a wrong
+    answer in the table. Naming it at the end of the run is the difference
+    between "this model is bad at logic puzzles" and "this run's context window
+    was too small for this model to finish thinking".
+    """
+    offenders = {
+        model: stats
+        for model, results in all_results.items()
+        if (stats := completeness(results))["truncated"] or stats["empty"]
+    }
+    if not offenders:
+        return
+
+    print(f"\n{'═' * 50}")
+    print("  Incomplete answers")
+    print(f"{'═' * 50}")
+    for model, stats in offenders.items():
+        print(
+            f"  {model}: {stats['truncated']:.0f} truncated, {stats['empty']:.0f} with no "
+            f"answer, out of {stats['total']:.0f} generations"
+        )
+    print(
+        f"\n  Truncated generations ran out of room at NUM_CTX={num_ctx} rather than\n"
+        "  finishing. They are scored as missing answers, not wrong ones. Raise\n"
+        "  NUM_CTX and re-run those models before reading the quality table."
+    )
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -559,6 +650,30 @@ def build_parser() -> argparse.ArgumentParser:
         "--no-code-exec",
         action="store_true",
         help="Do not execute model-generated code; coding tasks fall back to judge-only scoring",
+    )
+    run.add_argument(
+        "--answer-tags",
+        action="store_true",
+        help=(
+            "Ask every model to wrap its final answer in <answer></answer>, so reasoning "
+            "emitted as plain prose is not scored as the answer. Changes the prompt: "
+            "results are not comparable with runs made without it"
+        ),
+    )
+    run.add_argument(
+        "--think",
+        dest="think",
+        action="store_const",
+        const=True,
+        default=None,
+        help="Ask models to put their chain of thought on Ollama's separate thinking channel",
+    )
+    run.add_argument(
+        "--no-think",
+        dest="think",
+        action="store_const",
+        const=False,
+        help="Ask models not to emit a chain of thought at all",
     )
     run.set_defaults(func=cmd_run)
 

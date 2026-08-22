@@ -105,8 +105,26 @@ def run_check(check: dict[str, Any], response: str, code_exec: bool = True) -> C
     return {"type": kind, "passed": passed, "weight": weight, "detail": detail}
 
 
+def _vacuous(check: dict[str, Any], reason: str) -> CheckResult:
+    return {
+        "type": str(check["type"]),
+        "passed": 0.0,
+        "weight": float(check.get("weight", 1.0)),
+        "detail": reason,
+    }
+
+
 def run_checks(task: Task, response: str, code_exec: bool = True) -> list[CheckResult]:
-    """Evaluate every check attached to a task."""
+    """Evaluate every check attached to a task.
+
+    An empty answer fails every check, including the negated ones. Left to
+    themselves, "this forbidden word must not appear" and "this pattern must be
+    absent" are satisfied by silence, so a model that emitted nothing at all
+    scored 10/10 on the constraint half of a task and 0 on the rest. That is
+    not a partial success; it is a missing answer, and it is scored as one.
+    """
+    if not response.strip():
+        return [_vacuous(check, "no answer to check") for check in task.checks]
     return [run_check(check, response, code_exec) for check in task.checks]
 
 

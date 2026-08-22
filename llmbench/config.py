@@ -66,6 +66,14 @@ def _env_bool(name: str, default: bool) -> bool:
     return raw in ("1", "true", "yes", "on")
 
 
+def _env_tristate(name: str) -> bool | None:
+    """A flag that can also be left alone. Empty or `auto` means "don't ask"."""
+    raw = os.getenv(name, "").strip().lower()
+    if not raw or raw == "auto":
+        return None
+    return raw in ("1", "true", "yes", "on")
+
+
 @dataclass(frozen=True)
 class GenerationParams:
     """Sampling parameters sent to Ollama.
@@ -76,13 +84,22 @@ class GenerationParams:
 
     `num_ctx` in particular must be set explicitly: left unset, Ollama picks a
     per-model default and silently truncates anything longer.
+
+    The default is generous because the alternative is worse. At 8192 a
+    reasoning model given a hard puzzle spends the whole window thinking and
+    the generation is cut off before it ever writes an answer — measured as a
+    zero, indistinguishable in the report from a model that answered wrongly.
+    Three of five models in one run scored 0.4 on two tasks for exactly this
+    reason. A window big enough that models stop for their own reasons costs
+    KV-cache memory and runtime; a window that decides the result costs the
+    benchmark its meaning.
     """
 
     temperature: float = 0.0
     top_p: float = 1.0
     top_k: int = 40
     seed: int = 0
-    num_ctx: int = 8192
+    num_ctx: int = 32768
     num_predict: int = -1  # -1 = until the model stops
 
     def to_options(self) -> dict[str, Any]:
@@ -101,7 +118,10 @@ class GenerationParams:
 
 
 # Judging is a measurement instrument; it must not itself be a source of noise.
-JUDGE_PARAMS = GenerationParams(temperature=0.0, top_p=1.0, seed=0, num_ctx=8192)
+# The window has to hold the task prompt, the criteria, and the whole answer
+# being judged. Too small and the judge silently scores a truncated view of a
+# response — an instrument reading the wrong end of the ruler.
+JUDGE_PARAMS = GenerationParams(temperature=0.0, top_p=1.0, seed=0, num_ctx=32768)
 
 
 @dataclass(frozen=True)
@@ -140,6 +160,15 @@ class Config:
     code_exec: bool = True
     objective_weight: float = 0.6
 
+    # Reasoning handling. `think` maps to Ollama's thinking channel: True puts
+    # the chain of thought in its own field, False asks for none at all, None
+    # leaves the model's default alone. `answer_tags` appends an explicit
+    # "put the answer between <answer></answer>" instruction, which is the only
+    # reliable way to score a model that emits undelimited reasoning — at the
+    # cost of changing the prompt, so it is off unless asked for.
+    think: bool | None = None
+    answer_tags: bool = False
+
     @classmethod
     def from_env(cls) -> Config:
         load_dotenv()
@@ -158,7 +187,7 @@ class Config:
                 top_p=_env_float("TOP_P", 1.0),
                 top_k=_env_int("TOP_K", 40),
                 seed=_env_int("SEED", 0),
-                num_ctx=_env_int("NUM_CTX", 8192),
+                num_ctx=_env_int("NUM_CTX", 32768),
             ),
             quality_repeats=max(1, _env_int("QUALITY_REPEATS", 3)),
             perf_probe=_env_bool("PERF_PROBE", True),
@@ -169,6 +198,8 @@ class Config:
             retries=max(1, _env_int("RETRIES", 3)),
             code_exec=_env_bool("CODE_EXEC", True),
             objective_weight=min(max(_env_float("OBJECTIVE_WEIGHT", 0.6), 0.0), 1.0),
+            think=_env_tristate("THINK"),
+            answer_tags=_env_bool("ANSWER_TAGS", False),
         )
 
     def apply_cli(self, args: Any) -> Config:
@@ -182,4 +213,8 @@ class Config:
             updates["perf_probe"] = False
         if getattr(args, "no_code_exec", False):
             updates["code_exec"] = False
+        if getattr(args, "answer_tags", False):
+            updates["answer_tags"] = True
+        if getattr(args, "think", None) is not None:
+            updates["think"] = args.think
         return replace(self, **updates) if updates else self

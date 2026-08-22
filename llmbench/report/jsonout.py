@@ -15,6 +15,7 @@ from typing import Any
 from llmbench.scoring.aggregate import (
     Repeats,
     blend_repeats,
+    completeness,
     model_score_stats,
     perf_summary,
     task_score_stats,
@@ -42,6 +43,8 @@ def build_document(
     objective_weight: float = 0.6,
     prefill_results: dict[str, dict[str, Repeats]] | None = None,
     model_vram: dict[str, dict[str, float]] | None = None,
+    answer_tags: bool = False,
+    think: bool | None = None,
 ) -> dict[str, Any]:
     """Assemble the full result document."""
     perf_results = perf_results or {}
@@ -92,6 +95,9 @@ def build_document(
                     length: perf_summary(samples)
                     for length, samples in prefill_results.get(model_name, {}).items()
                 },
+                # How many generations were scorable at all. A quality mean
+                # cannot distinguish a wrong answer from an absent one; this can.
+                "completeness": completeness(results),
                 "overall": model_score_stats(blended, task_keys, weights),
                 "by_category": {
                     category: model_score_stats(
@@ -111,11 +117,18 @@ def build_document(
             "ram": get_ram_info(),
             "gpus": get_gpu_info(),
         },
+        # Everything a later run has to match before its numbers can be
+        # compared with these. A run judged by a different model, or sampled
+        # with a different context window, is measuring on a different ruler.
         "config": {
             "generation": gen_params or {},
             "repeats": repeats,
             "objective_weight": objective_weight,
             "judges": judge_models,
+            # Both change the text models were asked to produce, so both change
+            # what a score means.
+            "answer_tags": answer_tags,
+            "think": think,
         },
         "tasks": [
             {
