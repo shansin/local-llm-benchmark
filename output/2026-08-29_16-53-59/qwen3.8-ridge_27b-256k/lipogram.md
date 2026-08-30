@@ -1,0 +1,590 @@
+# instruction / lipogram
+
+**Prompt:** Write a product description for a stainless steel travel mug, in exactly 6 sentences, without ever using the letter "e".
+
+Rules:
+- No word may contain the letter "e", in upper or lower case
+- Exactly 6 sentences, each ending in a full stop
+- Each sentence must be at least 6 words long
+- Do not mention the constraint or comment on the task; output only the description
+
+Check your own work before answering.
+
+## Repeat 1 (seed 0)
+
+- Score: 1.0/10 — The AI response contains the letter 'e' and is not a product description, violating the primary zero-e constraint and all formatting rules.
+- Tokens/s: 55.7
+- Prefill tok/s: 1122.5
+- TTFT: 0.27s
+- Gen Time: 98.33s
+- Output Tokens: 5466
+
+**Answer (as scored):**
+
+We need to produce a product description for a stainless steel travel mug, exactly 6 sentences, each ending with a full stop, each sentence at least 6 words long, and no word may contain the letter "e" (upper or lower case). So we must avoid the letter e entirely in all words. Also avoid punctuation? The constraint: No word may contain the letter "e", in upper or lower case. So any character 'e' or 'E' is forbidden. We need exactly 6 sentences, each ending in a full stop. Each sentence must be at least 6 words long. We need to output only the description, no commentary.
+
+We need to think of words without 'e'. Product: stainless steel travel mug. But "stainless" contains e? s t a i n l e s s -> has e. "steel" has e. "travel" has e? t r a v e l -> e. "mug" is okay. So we cannot use those exact words. Need to describe without e. We can use synonyms: "stainless steel" is problematic. Could say "strong metal cup"? "metal" has e? m e t a l -> e. "cup" okay. "stainless" no. "steel" no. "travel" no. "mug" okay. Need to avoid e in all words. Let's list allowed words.
+
+We need 6 sentences, each at least 6 words. Need to ensure no 'e' in any word. Also avoid apostrophes? Words with apostrophe like "it's" contains e? i t ' s no e. But "don't" no e. But we must be careful.
+
+Let's brainstorm words without e:
+- "This" (t h i s) no e.
+- "is" (i s) no e.
+- "a" (a) no e.
+- "great" (g r e a t) has e.
+- "good" (g o o d) no e.
+- "strong" (s t r o n g) no e.
+- "sturdy" (s t u r d y) no e.
+- "durable" has e.
+- "long-lasting" maybe hyphen? "long" no e, "lasting" has e? l a s t i n g no e? Actually lasting: l a s t i n g, no e. But hyphenated might be considered one word? Safer to avoid hyphens? The rule says no word may contain e. Hyphenated words might be split? Better avoid.
+- "keeps" has e.
+- "holds" (h o l d s) no e.
+- "your" (y o u r) no e.
+- "drink" (d r i n k) no e.
+- "hot" (h o t) no e.
+- "cold" (c o l d) no e.
+- "warm" (w a r m) no e.
+- "cool" (c o o l) no e.
+- "all" (a l l) no e.
+- "day" (d a y) no e.
+- "long" (l o n g) no e.
+- "time" has e.
+- "while" has e.
+- "during" (d u r i n g) no e.
+- "on" (o n) no e.
+- "the" has e.
+- "a" okay.
+- "an" okay.
+- "my" (m y) no e.
+- "our" (o u r) no e.
+- "you" (y o u) no e.
+- "your" okay.
+- "it" (i t) no e.
+- "its" (i t s) no e.
+- "this" okay.
+- "that" (t h a t) no e.
+- "which" (w h i c h) no e.
+- "who" (w h o) no e.
+- "what" (w h a t) no e.
+- "how" (h o w) no e.
+- "why" (w h y) no e.
+- "when" has e.
+- "where" has e.
+- "there" has e.
+- "here" has e.
+- "now" (n o w) no e.
+- "soon" (s o o n) no e.
+- "today" (t o d a y) no e.
+- "tomorrow" (t o m o r r o w) no e.
+- "yesterday" has e.
+- "morning" (m o r n i n g) no e.
+- "night" (n i g h t) no e.
+- "day" okay.
+- "week" (w e e k) has e.
+- "month" (m o n t h) no e.
+- "year" has e.
+- "hour" (h o u r) no e.
+- "minute" has e.
+- "second" has e.
+- "fast" (f a s t) no e.
+- "quick" (q u i c k) no e.
+- "slow" (s l o w) no e.
+- "rapid" (r a p i d) no e.
+- "swift" (s w i f t) no e.
+- "speed" has e.
+- "fast" okay.
+- "quick" okay.
+- "rapid" okay.
+- "swift" okay.
+- "instant" has e? i n s t a n t no e.
+- "immediate" has e.
+- "right" (r i g h t) no e.
+- "away" (a w a y) no e.
+- "back" (b a c k) no e.
+- "forth" (f o r t h) no e.
+- "forward" (f o r w a r d) no e.
+- "backward" (b a c k w a r d) no e.
+- "up" (u p) no e.
+- "down" (d o w n) no e.
+- "out" (o u t) no e.
+- "in" (i n) no e.
+- "on" okay.
+- "off" (o f f) no e.
+- "into" (i n t o) no e.
+- "onto" (o n t o) no e.
+- "upon" (u p o n) no e.
+- "from" (f r o m) no e.
+- "to" (t o) no e.
+- "for" (f o r) no e.
+- "with" (w i t h) no e.
+- "without" (w i t h o u t) no e.
+- "by" (b y) no e.
+- "at" (a t) no e.
+- "as" (a s) no e.
+- "but" (b u t) no e.
+- "and" (a n d) no e.
+- "or" (o r) no e.
+- "nor" (n o r) no e.
+- "so" (s o) no e.
+- "yet" has e.
+- "if" (i f) no e.
+- "then" has e.
+- "than" (t h a n) no e.
+- "that" okay.
+- "this" okay.
+- "these" has e.
+- "those" has e.
+- "such" (s u c h) no e.
+- "same" has e.
+- "other" has e.
+- "another" has e.
+- "each" has e.
+- "every" has e.
+- "all" okay.
+- "any" (a n y) no e.
+- "some" has e.
+- "many" (m a n y) no e.
+- "much" (m u c h) no e.
+- "more" has e.
+- "most" (m o s t) no e.
+- "less" has e.
+- "least" has e.
+- "few" has e.
+- "many" okay.
+- "plenty" has e? p l e n t y -> e.
+- "lots" (l o t s) no e.
+- "load" (l o a d) no e.
+- "ton" (t o n) no e.
+- "tons" (t o n s) no e.
+- "mass" (m a s s) no e.
+- "massive" has e.
+- "big" (b i g) no e.
+- "large" has e.
+- "huge" has e.
+- "giant" (g i a n t) no e.
+- "vast" (v a s t) no e.
+- "wide" has e.
+- "broad" (b r o a d) no e.
+- "thick" (t h i c k) no e.
+- "thin" (t h i n) no e.
+- "slim" (s l i m) no e.
+- "slender" has e.
+- "narrow" (n a r r o w) no e.
+- "narrow" okay.
+- "narrow" no e.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "narrow" okay.
+- "n
+

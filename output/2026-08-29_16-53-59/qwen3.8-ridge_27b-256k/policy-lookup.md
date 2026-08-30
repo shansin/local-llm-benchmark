@@ -1,0 +1,327 @@
+# longcontext / policy-lookup
+
+**Prompt:** The document below is an internal policy with 120 numbered clauses.
+
+A department wishes to purchase a calibrated instrumentation unit — that is, equipment
+classified as calibrated instrumentation — committing 12,000 units.
+
+Answer these three questions strictly from the document:
+
+1. Who approves this request? Give the name exactly as the document writes it.
+2. Is a counter-signature by the Directorate required for this commitment? Answer true or false.
+3. Which clause number states the rule that decides the answer to question 1?
+
+Return only a JSON object, no code fence, no commentary:
+
+{"approver": "<string>", "countersignature_required": <true|false>, "governing_clause": <number>}
+
+POLICY
+1. Requests concerning travel reimbursement shall be submitted to the Finance Office not later than 21 working days before the commitment date, and shall be accompanied by a written justification where the sum committed exceeds 4750 units. Records of the determination are retained under clause 89.
+
+2. Requests concerning contractor onboarding shall be submitted to the Compliance Lead not later than 5 working days before the commitment date, and shall be accompanied by a written justification where the sum committed exceeds 18000 units. Records of the determination are retained under clause 109.
+
+3. Requests concerning data retention shall be submitted to the Directorate not later than 14 working days before the commitment date, and shall be accompanied by a written justification where the sum committed exceeds 11750 units. Records of the determination are retained under clause 86.
+
+4. Requests concerning premises access shall be submitted to the Operations Committee not later than 14 working days before the commitment date, and shall be accompanied by a written justification where the sum committed exceeds 2000 units. Records of the determination are retained under clause 3.
+
+5. Requests concerning external publication shall be submitted to the Finance Office not later than 14 working days before the commitment date, and shall be accompanied by a written justification where the sum committed exceeds 14000 units. Records of the determination are retained under clause 89.
+
+6. Requests concerning software licensing shall be submitted to the Compliance Lead not later than 30 working days before the commitment date, and shall be accompanied by a written justification where the sum committed exceeds 11000 units. Records of the determination are retained under clause 40.
+
+7. Requests concerning incident reporting shall be submitted to the Directorate not later than 10 working days before the commitment date, and shall be accompanied by a written justification where the sum committed exceeds 6250 units. Records of the determination are retained under clause 5.
+
+8. Requests concerning equipment procurement shall be submitted to the Operations Committee not later than 30 working days before the commitment date, and shall be accompanied by a written justification where the sum committed exceeds 17750 units. Records of the determination are retained under clause 48.
+
+9. Requests concerning travel reimbursement shall be submitted to the Finance Office not later than 21 working days before the commitment date, and shall be accompanied by a written justification where the sum committed exceeds 6250 units. Records of the determination are retained under clause 80.
+
+10. Requests concerning contractor onboarding shall be submitted to the Compliance Lead not later than 10 working days before the commitment date, and shall be accompanied by a written justification where the sum committed exceeds 3750 units. Records of the determination are retained under clause 36.
+
+11. Notwithstanding clause 63, equipment classified as calibrated instrumentation is treated as a restricted category, and the thresholds in clause 63 do not apply to it. Approval for restricted categories is determined under clause 88.
+
+12. Requests concerning premises access shall be submitted to the Operations Committee not later than 5 working days before the commitment date, and shall be accompanied by a written justification where the sum committed exceeds 3500 units. Records of the determination are retained under clause 1.
+
+13. Requests concerning external publication shall be submitted to the Finance Office not later than 5 working days before the commitment date, and shall be accompanied by a written justification where the sum committed exceeds 8250 units. Records of the determination are retained under clause 20.
+
+14. Requests concerning software licensing shall be submitted to the Compliance Lead not later than 5 working days before the commitment date, and shall be accompanied by a written justification where the sum committed exceeds 15500 units. Records of the determination are retained under clause 36.
+
+15. Requests concerning incident reporting shall be submitted to the Directorate not later than 21 working days before the commitment date, and shall be accompanied by a written justification where the sum committed exceeds 15500 units. Records of the determination are retained under clause 71.
+
+16. Requests concerning equipment procurement shall be submitted to the Operations Committee not later than 30 working days before the commitment date, and shall be accompanied by a written justification where the sum committed exceeds 4500 units. Records of the determination are retained under clause 16.
+
+17. Requests concerning travel reimbursement shall be submitted to the Finance Office not later than 5 working days before the commitment date, and shall be accompanied by a written justification where the sum committed exceeds 8000 units. Records of the determination are retained under clause 93.
+
+18. Requests concerning contractor onboarding shall be submitted to the Compliance Lead not later than 10 working days before the commitment date, and shall be accompanied by a written justification where the sum committed exceeds 4500 units. Records of the determination are retained under clause 30.
+
+19. Requests concerning data retention shall be submitted to the Directorate not later than 5 working days before the commitment date, and shall be accompanied by a written justification where the sum committed exceeds 10500 units. Records of the determination are retained under clause 46.
+
+20. Requests concerning premises access shall be submitted to the Operations Committee not later than 30 working days before the commitment date, and shall be accompanied by a written justification where the sum committed exceeds 18750 units. Records of the determination are retained under clause 42.
+
+21. Requests concerning external publication shall be submitted to the Finance Office not later than 14 working days before the commitment date, and shall be accompanied by a written justification where the sum committed exceeds 7000 units. Records of the determination are retained under clause 110.
+
+22. Requests concerning software licensing shall be submitted to the Compliance Lead not later than 10 working days before the commitment date, and shall be accompanied by a written justification where the sum committed exceeds 12000 units. Records of the determination are retained under clause 68.
+
+23. Requests concerning incident reporting shall be submitted to the Directorate not later than 30 working days before the commitment date, and shall be accompanied by a written justification where the sum committed exceeds 11500 units. Records of the determination are retained under clause 27.
+
+24. Requests concerning equipment procurement shall be submitted to the Operations Committee not later than 30 working days before the commitment date, and shall be accompanied by a written justification where the sum committed exceeds 10500 units. Records of the determination are retained under clause 92.
+
+25. Requests concerning travel reimbursement shall be submitted to the Finance Office not later than 14 working days before the commitment date, and shall be accompanied by a written justification where the sum committed exceeds 19500 units. Records of the determination are retained under clause 75.
+
+26. Requests concerning contractor onboarding shall be submitted to the Compliance Lead not later than 21 working days before the commitment date, and shall be accompanied by a written justification where the sum committed exceeds 11000 units. Records of the determination are retained under clause 10.
+
+27. Requests concerning data retention shall be submitted to the Directorate not later than 30 working days before the commitment date, and shall be accompanied by a written justification where the sum committed exceeds 12750 units. Records of the determination are retained under clause 118.
+
+28. Requests concerning premises access shall be submitted to the Operations Committee not later than 30 working days before the commitment date, and shall be accompanied by a written justification where the sum committed exceeds 8250 units. Records of the determination are retained under clause 59.
+
+29. Requests concerning external publication shall be submitted to the Finance Office not later than 30 working days before the commitment date, and shall be accompanied by a written justification where the sum committed exceeds 9250 units. Records of the determination are retained under clause 65.
+
+30. Requests concerning software licensing shall be submitted to the Compliance Lead not later than 21 working days before the commitment date, and shall be accompanied by a written justification where the sum committed exceeds 2750 units. Records of the determination are retained under clause 2.
+
+31. Requests concerning incident reporting shall be submitted to the Directorate not later than 5 working days before the commitment date, and shall be accompanied by a written justification where the sum committed exceeds 8750 units. Records of the determination are retained under clause 33.
+
+32. Requests concerning equipment procurement shall be submitted to the Operations Committee not later than 5 working days before the commitment date, and shall be accompanied by a written justification where the sum committed exceeds 1750 units. Records of the determination are retained under clause 86.
+
+33. Requests concerning travel reimbursement shall be submitted to the Finance Office not later than 30 working days before the commitment date, and shall be accompanied by a written justification where the sum committed exceeds 7250 units. Records of the determination are retained under clause 63.
+
+34. Requests concerning contractor onboarding shall be submitted to the Compliance Lead not later than 30 working days before the commitment date, and shall be accompanied by a written justification where the sum committed exceeds 5500 units. Records of the determination are retained under clause 42.
+
+35. Requests concerning data retention shall be submitted to the Directorate not later than 30 working days before the commitment date, and shall be accompanied by a written justification where the sum committed exceeds 2250 units. Records of the determination are retained under clause 87.
+
+36. Requests concerning premises access shall be submitted to the Operations Committee not later than 5 working days before the commitment date, and shall be accompanied by a written justification where the sum committed exceeds 9250 units. Records of the determination are retained under clause 119.
+
+37. Requests concerning external publication shall be submitted to the Finance Office not later than 5 working days before the commitment date, and shall be accompanied by a written justification where the sum committed exceeds 9000 units. Records of the determination are retained under clause 71.
+
+38. Requests concerning software licensing shall be submitted to the Compliance Lead not later than 14 working days before the commitment date, and shall be accompanied by a written justification where the sum committed exceeds 19750 units. Records of the determination are retained under clause 101.
+
+39. Requests concerning incident reporting shall be submitted to the Directorate not later than 21 working days before the commitment date, and shall be accompanied by a written justification where the sum committed exceeds 9750 units. Records of the determination are retained under clause 56.
+
+40. Requests concerning equipment procurement shall be submitted to the Operations Committee not later than 30 working days before the commitment date, and shall be accompanied by a written justification where the sum committed exceeds 7250 units. Records of the determination are retained under clause 22.
+
+41. Requests concerning travel reimbursement shall be submitted to the Finance Office not later than 10 working days before the commitment date, and shall be accompanied by a written justification where the sum committed exceeds 1250 units. Records of the determination are retained under clause 88.
+
+42. Requests concerning contractor onboarding shall be submitted to the Compliance Lead not later than 21 working days before the commitment date, and shall be accompanied by a written justification where the sum committed exceeds 8250 units. Records of the determination are retained under clause 55.
+
+43. Requests concerning data retention shall be submitted to the Directorate not later than 30 working days before the commitment date, and shall be accompanied by a written justification where the sum committed exceeds 7750 units. Records of the determination are retained under clause 118.
+
+44. Requests concerning premises access shall be submitted to the Operations Committee not later than 30 working days before the commitment date, and shall be accompanied by a written justification where the sum committed exceeds 3750 units. Records of the determination are retained under clause 56.
+
+45. Requests concerning external publication shall be submitted to the Finance Office not later than 21 working days before the commitment date, and shall be accompanied by a written justification where the sum committed exceeds 3250 units. Records of the determination are retained under clause 66.
+
+46. Requests concerning software licensing shall be submitted to the Compliance Lead not later than 14 working days before the commitment date, and shall be accompanied by a written justification where the sum committed exceeds 15250 units. Records of the determination are retained under clause 99.
+
+47. Requests concerning incident reporting shall be submitted to the Directorate not later than 30 working days before the commitment date, and shall be accompanied by a written justification where the sum committed exceeds 3000 units. Records of the determination are retained under clause 98.
+
+48. Requests concerning equipment procurement shall be submitted to the Operations Committee not later than 21 working days before the commitment date, and shall be accompanied by a written justification where the sum committed exceeds 3250 units. Records of the determination are retained under clause 52.
+
+49. Requests concerning travel reimbursement shall be submitted to the Finance Office not later than 10 working days before the commitment date, and shall be accompanied by a written justification where the sum committed exceeds 15500 units. Records of the determination are retained under clause 29.
+
+50. Requests concerning contractor onboarding shall be submitted to the Compliance Lead not later than 14 working days before the commitment date, and shall be accompanied by a written justification where the sum committed exceeds 3500 units. Records of the determination are retained under clause 96.
+
+51. Requests concerning data retention shall be submitted to the Directorate not later than 14 working days before the commitment date, and shall be accompanied by a written justification where the sum committed exceeds 13750 units. Records of the determination are retained under clause 71.
+
+52. Requests concerning premises access shall be submitted to the Operations Committee not later than 14 working days before the commitment date, and shall be accompanied by a written justification where the sum committed exceeds 12250 units. Records of the determination are retained under clause 8.
+
+53. Requests concerning external publication shall be submitted to the Finance Office not later than 14 working days before the commitment date, and shall be accompanied by a written justification where the sum committed exceeds 4000 units. Records of the determination are retained under clause 36.
+
+54. Requests concerning software licensing shall be submitted to the Compliance Lead not later than 30 working days before the commitment date, and shall be accompanied by a written justification where the sum committed exceeds 19250 units. Records of the determination are retained under clause 59.
+
+55. Requests concerning incident reporting shall be submitted to the Directorate not later than 5 working days before the commitment date, and shall be accompanied by a written justification where the sum committed exceeds 11000 units. Records of the determination are retained under clause 81.
+
+56. Requests concerning equipment procurement shall be submitted to the Operations Committee not later than 10 working days before the commitment date, and shall be accompanied by a written justification where the sum committed exceeds 13500 units. Records of the determination are retained under clause 10.
+
+57. Requests concerning travel reimbursement shall be submitted to the Finance Office not later than 30 working days before the commitment date, and shall be accompanied by a written justification where the sum committed exceeds 15250 units. Records of the determination are retained under clause 78.
+
+58. Requests concerning contractor onboarding shall be submitted to the Compliance Lead not later than 10 working days before the commitment date, and shall be accompanied by a written justification where the sum committed exceeds 5500 units. Records of the determination are retained under clause 100.
+
+59. Requests concerning data retention shall be submitted to the Directorate not later than 21 working days before the commitment date, and shall be accompanied by a written justification where the sum committed exceeds 2000 units. Records of the determination are retained under clause 15.
+
+60. Requests concerning premises access shall be submitted to the Operations Committee not later than 30 working days before the commitment date, and shall be accompanied by a written justification where the sum committed exceeds 11250 units. Records of the determination are retained under clause 40.
+
+61. Requests concerning external publication shall be submitted to the Finance Office not later than 5 working days before the commitment date, and shall be accompanied by a written justification where the sum committed exceeds 17000 units. Records of the determination are retained under clause 80.
+
+62. Requests concerning software licensing shall be submitted to the Compliance Lead not later than 5 working days before the commitment date, and shall be accompanied by a written justification where the sum committed exceeds 1500 units. Records of the determination are retained under clause 52.
+
+63. Requests concerning equipment procurement are approved by the Operations Committee where the sum committed is 7500 units or less, and by the Directorate where it exceeds that figure. This clause is subject to clause 11.
+
+64. Requests concerning equipment procurement shall be submitted to the Operations Committee not later than 30 working days before the commitment date, and shall be accompanied by a written justification where the sum committed exceeds 6500 units. Records of the determination are retained under clause 10.
+
+65. Requests concerning travel reimbursement shall be submitted to the Finance Office not later than 30 working days before the commitment date, and shall be accompanied by a written justification where the sum committed exceeds 18250 units. Records of the determination are retained under clause 77.
+
+66. Requests concerning contractor onboarding shall be submitted to the Compliance Lead not later than 14 working days before the commitment date, and shall be accompanied by a written justification where the sum committed exceeds 13000 units. Records of the determination are retained under clause 65.
+
+67. Requests concerning data retention shall be submitted to the Directorate not later than 10 working days before the commitment date, and shall be accompanied by a written justification where the sum committed exceeds 5500 units. Records of the determination are retained under clause 93.
+
+68. Requests concerning premises access shall be submitted to the Operations Committee not later than 10 working days before the commitment date, and shall be accompanied by a written justification where the sum committed exceeds 4250 units. Records of the determination are retained under clause 59.
+
+69. Requests concerning external publication shall be submitted to the Finance Office not later than 10 working days before the commitment date, and shall be accompanied by a written justification where the sum committed exceeds 7000 units. Records of the determination are retained under clause 50.
+
+70. Requests concerning software licensing shall be submitted to the Compliance Lead not later than 5 working days before the commitment date, and shall be accompanied by a written justification where the sum committed exceeds 14000 units. Records of the determination are retained under clause 38.
+
+71. Requests concerning incident reporting shall be submitted to the Directorate not later than 30 working days before the commitment date, and shall be accompanied by a written justification where the sum committed exceeds 16500 units. Records of the determination are retained under clause 66.
+
+72. Requests concerning equipment procurement shall be submitted to the Operations Committee not later than 30 working days before the commitment date, and shall be accompanied by a written justification where the sum committed exceeds 10250 units. Records of the determination are retained under clause 110.
+
+73. Requests concerning travel reimbursement shall be submitted to the Finance Office not later than 30 working days before the commitment date, and shall be accompanied by a written justification where the sum committed exceeds 4250 units. Records of the determination are retained under clause 58.
+
+74. Requests concerning contractor onboarding shall be submitted to the Compliance Lead not later than 30 working days before the commitment date, and shall be accompanied by a written justification where the sum committed exceeds 14250 units. Records of the determination are retained under clause 74.
+
+75. Requests concerning data retention shall be submitted to the Directorate not later than 5 working days before the commitment date, and shall be accompanied by a written justification where the sum committed exceeds 4750 units. Records of the determination are retained under clause 64.
+
+76. Requests concerning premises access shall be submitted to the Operations Committee not later than 21 working days before the commitment date, and shall be accompanied by a written justification where the sum committed exceeds 14500 units. Records of the determination are retained under clause 61.
+
+77. Requests concerning external publication shall be submitted to the Finance Office not later than 10 working days before the commitment date, and shall be accompanied by a written justification where the sum committed exceeds 6250 units. Records of the determination are retained under clause 39.
+
+78. Requests concerning software licensing shall be submitted to the Compliance Lead not later than 14 working days before the commitment date, and shall be accompanied by a written justification where the sum committed exceeds 18000 units. Records of the determination are retained under clause 21.
+
+79. Requests concerning incident reporting shall be submitted to the Directorate not later than 14 working days before the commitment date, and shall be accompanied by a written justification where the sum committed exceeds 3500 units. Records of the determination are retained under clause 91.
+
+80. Requests concerning equipment procurement shall be submitted to the Operations Committee not later than 21 working days before the commitment date, and shall be accompanied by a written justification where the sum committed exceeds 18000 units. Records of the determination are retained under clause 57.
+
+81. Requests concerning travel reimbursement shall be submitted to the Finance Office not later than 5 working days before the commitment date, and shall be accompanied by a written justification where the sum committed exceeds 9750 units. Records of the determination are retained under clause 23.
+
+82. Requests concerning contractor onboarding shall be submitted to the Compliance Lead not later than 14 working days before the commitment date, and shall be accompanied by a written justification where the sum committed exceeds 16000 units. Records of the determination are retained under clause 45.
+
+83. Requests concerning data retention shall be submitted to the Directorate not later than 14 working days before the commitment date, and shall be accompanied by a written justification where the sum committed exceeds 3000 units. Records of the determination are retained under clause 22.
+
+84. Requests concerning premises access shall be submitted to the Operations Committee not later than 30 working days before the commitment date, and shall be accompanied by a written justification where the sum committed exceeds 10250 units. Records of the determination are retained under clause 25.
+
+85. Requests concerning external publication shall be submitted to the Finance Office not later than 30 working days before the commitment date, and shall be accompanied by a written justification where the sum committed exceeds 12500 units. Records of the determination are retained under clause 99.
+
+86. Requests concerning software licensing shall be submitted to the Compliance Lead not later than 14 working days before the commitment date, and shall be accompanied by a written justification where the sum committed exceeds 16750 units. Records of the determination are retained under clause 113.
+
+87. Requests concerning incident reporting shall be submitted to the Directorate not later than 5 working days before the commitment date, and shall be accompanied by a written justification where the sum committed exceeds 12000 units. Records of the determination are retained under clause 12.
+
+88. Restricted categories are approved by the Compliance Lead irrespective of the sum committed, save that any commitment above 40000 units additionally requires counter-signature by the Directorate.
+
+89. Requests concerning travel reimbursement shall be submitted to the Finance Office not later than 30 working days before the commitment date, and shall be accompanied by a written justification where the sum committed exceeds 750 units. Records of the determination are retained under clause 56.
+
+90. Requests concerning contractor onboarding shall be submitted to the Compliance Lead not later than 30 working days before the commitment date, and shall be accompanied by a written justification where the sum committed exceeds 16750 units. Records of the determination are retained under clause 19.
+
+91. Requests concerning data retention shall be submitted to the Directorate not later than 21 working days before the commitment date, and shall be accompanied by a written justification where the sum committed exceeds 6500 units. Records of the determination are retained under clause 74.
+
+92. Requests concerning premises access shall be submitted to the Operations Committee not later than 21 working days before the commitment date, and shall be accompanied by a written justification where the sum committed exceeds 9750 units. Records of the determination are retained under clause 3.
+
+93. Requests concerning external publication shall be submitted to the Finance Office not later than 10 working days before the commitment date, and shall be accompanied by a written justification where the sum committed exceeds 4250 units. Records of the determination are retained under clause 56.
+
+94. Requests concerning software licensing shall be submitted to the Compliance Lead not later than 14 working days before the commitment date, and shall be accompanied by a written justification where the sum committed exceeds 7750 units. Records of the determination are retained under clause 33.
+
+95. Requests concerning incident reporting shall be submitted to the Directorate not later than 10 working days before the commitment date, and shall be accompanied by a written justification where the sum committed exceeds 10000 units. Records of the determination are retained under clause 46.
+
+96. Requests concerning equipment procurement shall be submitted to the Operations Committee not later than 30 working days before the commitment date, and shall be accompanied by a written justification where the sum committed exceeds 10750 units. Records of the determination are retained under clause 51.
+
+97. Requests concerning travel reimbursement shall be submitted to the Finance Office not later than 21 working days before the commitment date, and shall be accompanied by a written justification where the sum committed exceeds 5500 units. Records of the determination are retained under clause 105.
+
+98. Requests concerning contractor onboarding shall be submitted to the Compliance Lead not later than 5 working days before the commitment date, and shall be accompanied by a written justification where the sum committed exceeds 14000 units. Records of the determination are retained under clause 109.
+
+99. Requests concerning data retention shall be submitted to the Directorate not later than 21 working days before the commitment date, and shall be accompanied by a written justification where the sum committed exceeds 19500 units. Records of the determination are retained under clause 77.
+
+100. Requests concerning premises access shall be submitted to the Operations Committee not later than 14 working days before the commitment date, and shall be accompanied by a written justification where the sum committed exceeds 15250 units. Records of the determination are retained under clause 19.
+
+101. Requests concerning external publication shall be submitted to the Finance Office not later than 30 working days before the commitment date, and shall be accompanied by a written justification where the sum committed exceeds 6000 units. Records of the determination are retained under clause 4.
+
+102. Requests concerning software licensing shall be submitted to the Compliance Lead not later than 5 working days before the commitment date, and shall be accompanied by a written justification where the sum committed exceeds 7500 units. Records of the determination are retained under clause 103.
+
+103. Requests concerning incident reporting shall be submitted to the Directorate not later than 10 working days before the commitment date, and shall be accompanied by a written justification where the sum committed exceeds 10500 units. Records of the determination are retained under clause 112.
+
+104. Requests concerning equipment procurement shall be submitted to the Operations Committee not later than 5 working days before the commitment date, and shall be accompanied by a written justification where the sum committed exceeds 2500 units. Records of the determination are retained under clause 110.
+
+105. Requests concerning travel reimbursement shall be submitted to the Finance Office not later than 14 working days before the commitment date, and shall be accompanied by a written justification where the sum committed exceeds 17250 units. Records of the determination are retained under clause 25.
+
+106. Requests concerning contractor onboarding shall be submitted to the Compliance Lead not later than 21 working days before the commitment date, and shall be accompanied by a written justification where the sum committed exceeds 16750 units. Records of the determination are retained under clause 81.
+
+107. Requests concerning data retention shall be submitted to the Directorate not later than 10 working days before the commitment date, and shall be accompanied by a written justification where the sum committed exceeds 5750 units. Records of the determination are retained under clause 70.
+
+108. Requests concerning premises access shall be submitted to the Operations Committee not later than 10 working days before the commitment date, and shall be accompanied by a written justification where the sum committed exceeds 14750 units. Records of the determination are retained under clause 75.
+
+109. Requests concerning external publication shall be submitted to the Finance Office not later than 14 working days before the commitment date, and shall be accompanied by a written justification where the sum committed exceeds 13500 units. Records of the determination are retained under clause 69.
+
+110. Requests concerning software licensing shall be submitted to the Compliance Lead not later than 5 working days before the commitment date, and shall be accompanied by a written justification where the sum committed exceeds 19250 units. Records of the determination are retained under clause 100.
+
+111. Requests concerning incident reporting shall be submitted to the Directorate not later than 21 working days before the commitment date, and shall be accompanied by a written justification where the sum committed exceeds 13250 units. Records of the determination are retained under clause 120.
+
+112. Requests concerning equipment procurement shall be submitted to the Operations Committee not later than 30 working days before the commitment date, and shall be accompanied by a written justification where the sum committed exceeds 16500 units. Records of the determination are retained under clause 107.
+
+113. Requests concerning travel reimbursement shall be submitted to the Finance Office not later than 5 working days before the commitment date, and shall be accompanied by a written justification where the sum committed exceeds 13500 units. Records of the determination are retained under clause 39.
+
+114. Requests concerning contractor onboarding shall be submitted to the Compliance Lead not later than 5 working days before the commitment date, and shall be accompanied by a written justification where the sum committed exceeds 6750 units. Records of the determination are retained under clause 71.
+
+115. Requests concerning data retention shall be submitted to the Directorate not later than 21 working days before the commitment date, and shall be accompanied by a written justification where the sum committed exceeds 10750 units. Records of the determination are retained under clause 88.
+
+116. Requests concerning premises access shall be submitted to the Operations Committee not later than 21 working days before the commitment date, and shall be accompanied by a written justification where the sum committed exceeds 11250 units. Records of the determination are retained under clause 48.
+
+117. Requests concerning external publication shall be submitted to the Finance Office not later than 30 working days before the commitment date, and shall be accompanied by a written justification where the sum committed exceeds 3750 units. Records of the determination are retained under clause 71.
+
+118. Requests concerning software licensing shall be submitted to the Compliance Lead not later than 30 working days before the commitment date, and shall be accompanied by a written justification where the sum committed exceeds 5250 units. Records of the determination are retained under clause 57.
+
+119. Requests concerning incident reporting shall be submitted to the Directorate not later than 5 working days before the commitment date, and shall be accompanied by a written justification where the sum committed exceeds 17750 units. Records of the determination are retained under clause 84.
+
+120. Requests concerning equipment procurement shall be submitted to the Operations Committee not later than 5 working days before the commitment date, and shall be accompanied by a written justification where the sum committed exceeds 4750 units. Records of the determination are retained under clause 50.
+
+## Repeat 1 (seed 0)
+
+- Score: 9.5/10 — Approver and governing clause and countersignature flag are correct; approver string misses the leading 'the' as written in the document, so accuracy and instruction following are slightly reduced.
+- Tokens/s: 54.2
+- Prefill tok/s: 2422.6
+- TTFT: 3.36s
+- Gen Time: 18.02s
+- Output Tokens: 794
+- answer read from `answer_tag`
+
+<details><summary>Reasoning (3245 chars, not scored)</summary>
+
+The user wants me to answer three questions strictly from the document.
+
+The scenario: A department wishes to purchase a calibrated instrumentation unit — that is, equipment classified as calibrated instrumentation — committing 12,000 units.
+
+Questions:
+1. Who approves this request? Give the name exactly as the document writes it.
+2. Is a counter-signature by the Directorate required for this commitment? Answer true or false.
+3. Which clause number states the rule that decides the answer to question 1?
+
+Let me analyze the document.
+
+Clause 11: "Notwithstanding clause 63, equipment classified as calibrated instrumentation is treated as a restricted category, and the thresholds in clause 63 do not apply to it. Approval for restricted categories is determined under clause 88."
+
+Clause 88: "Restricted categories are approved by the Compliance Lead irrespective of the sum committed, save that any commitment above 40000 units additionally requires counter-signature by the Directorate."
+
+So for calibrated instrumentation (restricted category), approval is determined under clause 88. Clause 88 says restricted categories are approved by the Compliance Lead irrespective of the sum committed, save that any commitment above 40000 units additionally requires counter-signature by the Directorate.
+
+The commitment is 12,000 units, which is not above 40,000. So no counter-signature by the Directorate is required.
+
+Question 1: Who approves this request? The Compliance Lead.
+
+Question 2: Is a counter-signature by the Directorate required? False (12,000 is not above 40,000).
+
+Question 3: Which clause number states the rule that decides the answer to question 1? The rule that decides the answer to question 1 is clause 88, which states that restricted categories are approved by the Compliance Lead. But wait, clause 11 says "Approval for restricted categories is determined under clause 88." So the rule that decides the answer to question 1 is clause 88.
+
+Let me think carefully. The question asks: "Which clause number states the rule that decides the answer to question 1?" The answer to question 1 is "Compliance Lead." The rule that decides this is clause 88, which states "Restricted categories are approved by the Compliance Lead irrespective of the sum committed."
+
+So governing_clause = 88.
+
+Let me double check. Clause 11 establishes that calibrated instrumentation is a restricted category and that approval is determined under clause 88. Clause 88 is the rule that actually states who approves (Compliance Lead). So the clause that states the rule deciding the answer to question 1 is clause 88.
+
+Yes, governing_clause = 88.
+
+Let me verify the approver name exactly as written: "Compliance Lead".
+
+Countersignature_required: false.
+
+So the JSON:
+{"approver": "Compliance Lead", "countersignature_required": false, "governing_clause": 88}
+
+Let me make sure I'm not missing anything. The commitment is 12,000 units. Clause 88 says "any commitment above 40000 units additionally requires counter-signature by the Directorate." 12,000 is not above 40,000, so no counter-signature. False.
+
+The approver is the Compliance Lead.
+
+The governing clause is 88.
+
+I'm confident.
+
+Let me write the final answer between the tags.
+</think>
+
+</details>
+
+**Answer (as scored):**
+
+{"approver": "Compliance Lead", "countersignature_required": false, "governing_clause": 88}
+

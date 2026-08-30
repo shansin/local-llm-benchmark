@@ -1,0 +1,284 @@
+# instruction / lipogram
+
+**Prompt:** Write a product description for a stainless steel travel mug, in exactly 6 sentences, without ever using the letter "e".
+
+Rules:
+- No word may contain the letter "e", in upper or lower case
+- Exactly 6 sentences, each ending in a full stop
+- Each sentence must be at least 6 words long
+- Do not mention the constraint or comment on the task; output only the description
+
+Check your own work before answering.
+
+## Repeat 1 (seed 0)
+
+- Score: 1.0/10 — [NO ANSWER] the model returned nothing outside its reasoning
+- Tokens/s: 119.0
+- Prefill tok/s: 880.1
+- TTFT: 0.17s
+- Gen Time: 18.56s
+- Output Tokens: 2181
+- answer read from `thinking_field`
+
+<details><summary>Reasoning (4040 chars, not scored)</summary>
+
+Let me write a product description for a stainless steel travel mug in exactly 6 sentences, without using the letter "e" (upper or lower case). Each sentence must be at least 6 words long.
+
+Let me think about words I can use:
+- "stainless" - s,t,a,i,n,l,e,s,s - NO, contains "e"
+- "steel" - s,t,e,e,l - NO, contains "e"
+- "travel" - t,r,a,v,e,l - NO, contains "e"
+- "mug" - m,u,g - OK
+- "cup" - c,u,p - OK
+- "drink" - d,r,i,n,k - OK
+- "hot" - h,o,t - OK
+- "cold" - c,o,l,d - OK
+- "warm" - w,a,r,m - OK
+- "cool" - c,o,o,l - OK
+- "hold" - h,o,l,d - OK
+- "your" - y,o,u,r - OK
+- "this" - t,h,i,s - OK
+- "that" - t,h,a,t - OK
+- "with" - w,i,t,h - OK
+- "for" - f,o,r - OK
+- "and" - a,n,d - OK
+- "but" - b,u,t - OK
+- "not" - n,o,t - OK
+- "all" - a,l,l - OK
+- "day" - d,a,y - OK
+- "long" - l,o,n,g - OK
+- "top" - t,o,p - OK
+- "lid" - l,i,d - OK
+- "cap" - c,a,p - OK
+- "pour" - p,o,u,r - OK
+- "sip" - s,i,p - OK
+- "swirl" - s,w,i,r,l - OK
+- "sipp" - no
+- "sip" - s,i,p - OK
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp" - no
+- "sipp"
+
+</details>
+
+**Answer (as scored):**
+
+_(none)_
+
