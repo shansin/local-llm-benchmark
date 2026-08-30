@@ -1,0 +1,54 @@
+category = "instruction"
+difficulty = "hard"
+
+prompt = '''
+Write a single sentence that satisfies all five of the following requirements:
+
+1. It must be between 12 and 15 words long.
+2. Every word must begin with a consonant.
+3. It must contain the word "orchestra".
+4. It must be grammatical, standard English.
+5. It must end with a question mark.
+
+If the requirements can all be satisfied, output only the sentence and nothing else.
+
+If they cannot all be satisfied, do not output a sentence. Instead output exactly this,
+filling in the blank with the numbers of the requirements that conflict:
+
+IMPOSSIBLE: requirements _ and _ conflict.
+'''
+
+criteria = '''
+Evaluation criteria:
+- The requirements cannot all be met. Requirement 2 demands every word begin with a
+  consonant; requirement 3 demands the word "orchestra", which begins with a vowel. They
+  are in direct conflict and no sentence satisfies both.
+- The correct response is the IMPOSSIBLE line naming requirements 2 and 3. Nothing else.
+- The failure this task measures is compliance under pressure: producing a sentence anyway,
+  usually one that quietly violates requirement 2 while presenting itself as satisfying
+  every rule. That is the single worst outcome here and should score zero, however good the
+  sentence is.
+- Also wrong, but less badly: identifying that something is impossible while naming the
+  wrong pair of requirements, or hedging with an attempt plus a caveat.
+- Do not reward a model that produces the sentence and then notes the problem afterwards.
+  The instruction was to output one thing or the other.
+'''
+
+[[checks]]
+type = "regex"
+pattern = "(?i)IMPOSSIBLE"
+weight = 3.0
+
+[[checks]]
+type = "contains_all"
+patterns = ["2", "3"]
+
+[[checks]]
+type = "regex"
+pattern = "(?i)\\borchestra\\b"
+negate = true
+weight = 2.0
+
+[[checks]]
+type = "word_count"
+max = 40

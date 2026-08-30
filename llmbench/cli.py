@@ -13,6 +13,7 @@ from typing import Any
 
 from llmbench.config import JUDGE_PARAMS, Config, GenerationParams
 from llmbench.models import Model, get_models
+from llmbench.preflight import ModelProfile, preflight
 from llmbench.report.compare import compare_documents, leaderboard, load_run, render_comparison
 from llmbench.report.html import write_html
 from llmbench.report.jsonout import build_document, write_json
@@ -185,6 +186,7 @@ def cmd_run(args: argparse.Namespace, config: Config) -> int:  # noqa: PLR0915
     objective_scores: dict[str, Any] = {}
     prefill_results: dict[str, Any] = {}
     model_vram: dict[str, Any] = {}
+    profiles: dict[str, dict[str, Any]] = {}
 
     if args.resume:
         run_dir = args.resume
@@ -207,6 +209,7 @@ def cmd_run(args: argparse.Namespace, config: Config) -> int:  # noqa: PLR0915
         objective_scores = state.get("objective_scores", {})
         prefill_results = state.get("prefill_results", {})
         model_vram = state.get("model_vram", {})
+        profiles = state.get("profiles", {})
         elapsed_prior = state.get("elapsed_seconds", 0.0)
         if state.get("task_keys") and state["task_keys"] != task_keys:
             print("Warning: the task set changed since the original run.")
@@ -218,8 +221,6 @@ def cmd_run(args: argparse.Namespace, config: Config) -> int:  # noqa: PLR0915
                 print(f"  Removed: {', '.join(removed)} (their results stay in the checkpoint)")
         # The seeds and sampling settings of the original run govern the resumed
         # one; mixing settings inside a single run would make it uninterpretable.
-        if state.get("repeats"):
-            config = replace(config, quality_repeats=state["repeats"])
         if state.get("gen_params"):
             config = replace(config, gen=GenerationParams(**state["gen_params"]))
     else:
@@ -240,15 +241,10 @@ def cmd_run(args: argparse.Namespace, config: Config) -> int:  # noqa: PLR0915
         judges = [{"name": m["name"], "details": m.get("details", {})} for m in judge_models]
         print(f"Judge panel: {', '.join(j['name'] for j in judges)}")
         overlap = {j["name"] for j in judges} & {m["name"] for m in selected}
-        if overlap and not config.allow_self_judge:
+        if overlap:
             print(
                 f"Note: {', '.join(sorted(overlap))} both compete and judge. "
                 "Their votes on their own answers are excluded."
-            )
-        elif overlap:
-            print(
-                f"Warning: ALLOW_SELF_JUDGE is on, so {', '.join(sorted(overlap))} "
-                "will score their own answers. Those scores are not independent."
             )
 
         timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
@@ -260,32 +256,21 @@ def cmd_run(args: argparse.Namespace, config: Config) -> int:  # noqa: PLR0915
         judge_scores = {}
         elapsed_prior = 0.0
 
-    repeats = config.quality_repeats
     print(f"Loaded {len(tasks)} tasks across {len(categories)} categories: {', '.join(categories)}")
-    print(f"Sampling: {repeats} repeat(s) per prompt, {config.gen.to_options()}")
-    if repeats < 2:
-        print(
-            "Note: with 1 repeat there is no noise estimate; gaps between models are not "
-            "distinguishable from sampling variation."
-        )
+    print(f"Sampling: {config.gen.to_options()}")
+    print(
+        "Protocol: every prompt asks for the final answer inside <answer></answer>; "
+        "each model's thinking mode is established by a preflight."
+    )
 
     def prompt_for(task: Any) -> str:
         """The text actually sent for a task.
 
-        With ANSWER_TAGS on, every prompt carries the same answer-delimiter
-        instruction. It has to be applied identically at generation and judging
-        time, or the judge scores a prompt the model never saw.
+        The answer-delimiter instruction is part of the protocol on every
+        prompt, and it is applied identically at generation and judging time —
+        otherwise the judge scores a prompt the model never saw.
         """
-        return with_answer_format(task.prompt) if config.answer_tags else task.prompt
-
-    if config.answer_tags:
-        print(
-            "Answer tags: on — prompts ask for the final answer inside "
-            "<answer></answer>. This changes the prompt, so scores are not "
-            "comparable with runs made without it."
-        )
-    if config.think is not None:
-        print(f"Thinking channel: requested {'on' if config.think else 'off'} for every model.")
+        return with_answer_format(task.prompt)
 
     session_start = time.monotonic()
 
@@ -298,17 +283,14 @@ def cmd_run(args: argparse.Namespace, config: Config) -> int:  # noqa: PLR0915
             {
                 "selected": selected,
                 "judges": judges,
-                "judge": judges[0],  # kept so older tooling can still read the file
-                "allow_self_judge": config.allow_self_judge,
                 "categories": categories,
                 "task_keys": task_keys,
                 "gen_params": config.gen.to_options(),
-                "repeats": repeats,
+                "profiles": profiles,
                 "all_results": all_results,
                 "all_details": all_details,
                 "judge_scores": judge_scores,
                 "objective_scores": objective_scores,
-                "objective_weight": config.objective_weight,
                 "perf_results": perf_results,
                 "prefill_results": prefill_results,
                 "model_vram": model_vram,
@@ -320,12 +302,19 @@ def cmd_run(args: argparse.Namespace, config: Config) -> int:  # noqa: PLR0915
     # ---- Generation ----
     for mi, model in enumerate(selected, 1):
         model_name = model["name"]
-        model_dir = run_dir / safe_dirname(model_name)
-        model_dir.mkdir(parents=True, exist_ok=True)
+
+        known = profiles.get(model_name)
+        if known is not None and not known.get("usable", True):
+            print(
+                f"\n[{mi}/{len(selected)}] {model_name}: excluded by preflight "
+                f"({known.get('note', 'no scorable answer')}), skipping."
+            )
+            continue
+
         results = all_results.setdefault(model_name, {})
         all_details[model_name] = model.get("details", {})
 
-        complete = all(len(results.get(k, [])) >= repeats for k in task_keys)
+        complete = all(results.get(k) for k in task_keys)
         probe_done = not config.perf_probe or (
             len(perf_results.get(model_name, [])) > 0
             and (not config.prefill_sweep or model_name in prefill_results)
@@ -351,6 +340,27 @@ def cmd_run(args: argparse.Namespace, config: Config) -> int:  # noqa: PLR0915
                 note += f" (+{gpu['offloaded_mib']:.0f} MiB spilled to RAM)"
             print(f"loaded in {load_seconds:.1f}s{note}")
             checkpoint()
+
+        # One trivial prompt under the real protocol, before 43 real ones: it
+        # establishes the thinking mode this model answers under, or that no
+        # mode works — in which case the model is excluded here, loudly, rather
+        # than benchmarked into a row of zeros over several hours.
+        if model_name not in profiles:
+            print("  preflight...", end=" ", flush=True)
+            profile = preflight(config.base_url, model_name, config.gen)
+            profiles[model_name] = profile.as_dict()
+            print(profile.note if profile.usable else f"FAILED — {profile.note}")
+            checkpoint()
+
+        profile = ModelProfile.from_dict(profiles[model_name])
+        if not profile.usable:
+            print(
+                f"  Skipping {model_name}: it produced no scorable answer under any "
+                "thinking mode. It will be listed as excluded in the report."
+            )
+            all_results.pop(model_name, None)
+            checkpoint()
+            continue
 
         if config.perf_probe and not probe_done:
             print(f"  throughput probe ({config.perf_repeats}x)...", end=" ", flush=True)
@@ -389,27 +399,29 @@ def cmd_run(args: argparse.Namespace, config: Config) -> int:  # noqa: PLR0915
 
         for ti, task in enumerate(tasks, 1):
             done = results.setdefault(task.key, [])
-            for rep in range(len(done), repeats):
-                label = f"  [{ti}/{len(tasks)}] {task.category}/{task.id} [{rep + 1}/{repeats}]..."
-                print(label, end=" ", flush=True)
-                result = run_prompt(
-                    config.base_url,
-                    model_name,
-                    prompt_for(task),
-                    config.prompt_timeout,
-                    config.gen.for_repeat(rep),
-                    retries=config.retries,
-                    think=config.think,
+            if done:
+                continue
+            print(f"  [{ti}/{len(tasks)}] {task.category}/{task.id}...", end=" ", flush=True)
+            result = run_prompt(
+                config.base_url,
+                model_name,
+                prompt_for(task),
+                config.prompt_timeout,
+                config.gen,
+                retries=config.retries,
+                think=profile.think,
+            )
+            done.append(result)
+            if result["error"] is None:
+                note = " TRUNCATED" if result.get("truncated") else ""
+                print(
+                    f"done ({result['tokens_per_sec']:.1f} tok/s, "
+                    f"{result['total_time']:.1f}s){note}"
                 )
-                done.append(result)
-                if result["error"] is None:
-                    note = " TRUNCATED" if result.get("truncated") else ""
-                    print(
-                        f"done ({result['tokens_per_sec']:.1f} tok/s, "
-                        f"{result['total_time']:.1f}s){note}"
-                    )
-                checkpoint()
+            checkpoint()
 
+        model_dir = run_dir / safe_dirname(model_name)
+        model_dir.mkdir(parents=True, exist_ok=True)
         write_model_benchmark(
             model_dir,
             model,
@@ -446,11 +458,7 @@ def cmd_run(args: argparse.Namespace, config: Config) -> int:  # noqa: PLR0915
                 answers = results.get(task.key, [])
                 done = model_checks.setdefault(task.key, [])
                 for rep in range(len(done), len(answers)):
-                    print(
-                        f"    {task.category}/{task.id} [{rep + 1}/{len(answers)}]...",
-                        end=" ",
-                        flush=True,
-                    )
+                    print(f"    {task.category}/{task.id}...", end=" ", flush=True)
                     extraction = extraction_for(answers[rep])
                     checks = run_checks(task, extraction.answer, config.code_exec)
                     score = objective_score(checks)
@@ -478,11 +486,7 @@ def cmd_run(args: argparse.Namespace, config: Config) -> int:  # noqa: PLR0915
             answers = results.get(task.key, [])
             verdicts = model_scores.setdefault(task.key, [])
             for rep in range(len(verdicts), len(answers)):
-                print(
-                    f"    {task.category}/{task.id} [{rep + 1}/{len(answers)}]...",
-                    end=" ",
-                    flush=True,
-                )
+                print(f"    {task.category}/{task.id}...", end=" ", flush=True)
                 extraction = extraction_for(answers[rep])
                 if extraction.empty:
                     # Never hand an empty string to a judge. Asked to score
@@ -508,7 +512,6 @@ def cmd_run(args: argparse.Namespace, config: Config) -> int:  # noqa: PLR0915
                         timeout=config.judge_timeout,
                         params=JUDGE_PARAMS,
                         model_under_test=model_name,
-                        allow_self_judge=config.allow_self_judge,
                         verified=_verified_facts(objective_scores, model_name, task.key, rep),
                     )
                 verdicts.append(verdict)
@@ -519,6 +522,8 @@ def cmd_run(args: argparse.Namespace, config: Config) -> int:  # noqa: PLR0915
     # Judge scores are written into the per-model reports, so refresh them.
     for model in selected:
         model_name = model["name"]
+        if model_name not in all_results:
+            continue
         write_model_benchmark(
             run_dir / safe_dirname(model_name),
             model,
@@ -528,6 +533,12 @@ def cmd_run(args: argparse.Namespace, config: Config) -> int:  # noqa: PLR0915
             perf_results.get(model_name),
             cold_loads.get(model_name),
         )
+
+    excluded = {
+        name: profile.get("note", "")
+        for name, profile in profiles.items()
+        if not profile.get("usable", True)
+    }
 
     total_runtime = current_elapsed()
     write_results(
@@ -540,12 +551,11 @@ def cmd_run(args: argparse.Namespace, config: Config) -> int:  # noqa: PLR0915
         perf_results,
         cold_loads,
         config.gen,
-        repeats,
         total_runtime,
         objective_scores,
-        config.objective_weight,
         prefill_results,
         model_vram,
+        excluded,
     )
     # results.json is the canonical record; markdown and HTML are views of it.
     document = build_document(
@@ -558,14 +568,11 @@ def cmd_run(args: argparse.Namespace, config: Config) -> int:  # noqa: PLR0915
         perf_results,
         cold_loads,
         config.gen.to_options(),
-        repeats,
         total_runtime,
         objective_scores,
-        config.objective_weight,
         prefill_results,
         model_vram,
-        config.answer_tags,
-        config.think,
+        profiles,
     )
     write_json(run_dir, document)
     write_html(run_dir, document)
@@ -573,6 +580,7 @@ def cmd_run(args: argparse.Namespace, config: Config) -> int:  # noqa: PLR0915
     checkpoint()
 
     _report_incomplete(all_results, config.gen.num_ctx)
+    _report_excluded(excluded)
 
     print(f"\n{'═' * 50}")
     print(f"  Results saved to: {run_dir / 'results.md'}")
@@ -624,6 +632,22 @@ def _report_incomplete(all_results: dict[str, Any], num_ctx: int) -> None:
     )
 
 
+def _report_excluded(excluded: dict[str, str]) -> None:
+    """Name the models the preflight kept out of the run, with the evidence."""
+    if not excluded:
+        return
+    print(f"\n{'═' * 50}")
+    print("  Excluded by preflight")
+    print(f"{'═' * 50}")
+    for model, note in excluded.items():
+        print(f"  {model}: {note}")
+    print(
+        "\n  These models produced no scorable answer to a trivial prompt under any\n"
+        "  thinking mode, so benchmarking them would have measured the harness, not\n"
+        "  the model. They have no leaderboard row."
+    )
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="benchmark", description="Local LLM Benchmark Tool")
     sub = parser.add_subparsers(dest="command")
@@ -636,44 +660,14 @@ def build_parser() -> argparse.ArgumentParser:
         help="Resume a previous run from an output folder (e.g. ./output/2026-04-11_23-43-10)",
     )
     run.add_argument(
-        "--repeats", type=int, default=None, help="Times to answer each prompt (default 3)"
-    )
-    run.add_argument(
-        "--no-perf-probe", action="store_true", help="Skip the dedicated throughput probe"
-    )
-    run.add_argument(
         "--quick",
         action="store_true",
-        help="1 repeat, no throughput probe — fastest way to smoke-test a change",
+        help="Skip the throughput probe and prefill sweep — fastest way to smoke-test a change",
     )
     run.add_argument(
         "--no-code-exec",
         action="store_true",
         help="Do not execute model-generated code; coding tasks fall back to judge-only scoring",
-    )
-    run.add_argument(
-        "--answer-tags",
-        action="store_true",
-        help=(
-            "Ask every model to wrap its final answer in <answer></answer>, so reasoning "
-            "emitted as plain prose is not scored as the answer. Changes the prompt: "
-            "results are not comparable with runs made without it"
-        ),
-    )
-    run.add_argument(
-        "--think",
-        dest="think",
-        action="store_const",
-        const=True,
-        default=None,
-        help="Ask models to put their chain of thought on Ollama's separate thinking channel",
-    )
-    run.add_argument(
-        "--no-think",
-        dest="think",
-        action="store_const",
-        const=False,
-        help="Ask models not to emit a chain of thought at all",
     )
     run.set_defaults(func=cmd_run)
 

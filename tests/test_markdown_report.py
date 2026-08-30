@@ -59,7 +59,8 @@ def test_truncated_generations_are_named_along_with_the_setting_that_caused_them
 def test_leaked_reasoning_is_explained_where_it_is_counted(tmp_path):
     md = _write(tmp_path, {"m": {"t1": [gen("Let me plan this out.\n\nThe scene.")]}})
     assert "Leaked reasoning" in md
-    assert "--answer-tags" in md
+    # Answer tags are always on now, so leakage means the model ignored them.
+    assert "ignored" in md
 
 
 def test_per_task_file_shows_the_text_that_was_actually_scored(tmp_path):
@@ -87,3 +88,36 @@ def test_per_task_file_flags_a_truncated_generation(tmp_path):
     body = (tmp_path / "t1.md").read_text()
     assert "truncated" in body
     assert "_(none)_" in body
+
+
+def test_discarded_reasoning_is_told_apart_from_the_context_window(tmp_path):
+    """The two truncations have different remedies; the report must say which."""
+    md = _write(
+        tmp_path,
+        {"m": {"t1": [gen("", truncated=True, discarded_reasoning=True)]}},
+        gen_params={"num_ctx": 8192},
+    )
+    assert "discarded" in md
+    assert "cannot fix" in md
+
+
+def test_an_ordinary_truncation_does_not_mention_discarded_reasoning(tmp_path):
+    md = _write(tmp_path, {"m": {"t1": [gen("<think>never finished", truncated=True)]}})
+    assert "cannot fix" not in md
+
+
+def test_excluded_models_are_listed_with_their_evidence(tmp_path):
+    write_results(
+        tmp_path,
+        all_results={"m": {"t1": [gen()]}},
+        all_details={},
+        judge_scores={},
+        judge_model="j",
+        tasks=TASKS,
+        gen_params={"num_ctx": 8192},
+        excluded={"broken:7b": "thinking on: empty response; model default: timeout"},
+    )
+    md = (tmp_path / "results.md").read_text()
+    assert "Excluded models" in md
+    assert "broken:7b" in md
+    assert "empty response" in md

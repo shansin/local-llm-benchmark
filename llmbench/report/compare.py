@@ -29,13 +29,13 @@ def noise_floor(document: dict[str, Any]) -> float:
 
 # Settings that have to match before two runs' scores mean the same thing.
 # The judge panel is the sharpest of them: swapping the judge moves every score
-# in the table at once, in a direction no per-model reading can recover.
+# in the table at once, in a direction no per-model reading can recover. The
+# elicitation protocol itself is fixed in code, so it no longer appears here —
+# except when one run predates the fixed protocol, which the answer_tags key
+# from older documents still reveals.
 _COMPARABILITY_KEYS = (
     ("judges", "judge panel"),
-    ("objective_weight", "objective/judge blend"),
-    ("repeats", "repeats per prompt"),
     ("answer_tags", "answer-tag prompting"),
-    ("think", "thinking channel"),
 )
 _GENERATION_KEYS = ("num_ctx", "temperature", "top_p", "top_k", "seed")
 
@@ -184,9 +184,9 @@ def render_comparison(diff: dict[str, Any]) -> str:
         )
     else:
         lines.append(
-            "**Neither run has a noise estimate** (single-sample runs), so any difference "
-            "below could be sampling variation. Re-run with `QUALITY_REPEATS` above 1 to "
-            "get a threshold."
+            "**No noise estimate** (each prompt is sampled once at temperature 0), so a "
+            "small difference below could be sampling variation rather than change. "
+            "Trust deltas that are large or consistent across tasks."
         )
     lines.append("")
 

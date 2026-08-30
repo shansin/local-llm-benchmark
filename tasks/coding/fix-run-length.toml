@@ -1,0 +1,54 @@
+category = "coding"
+difficulty = "medium"
+
+prompt = '''
+The function below is supposed to run-length encode a string: return a list of
+`(character, count)` pairs, one per run of consecutive identical characters, in order.
+
+```python
+def encode(data: str) -> list[tuple[str, int]]:
+    """Run-length encode a string.
+
+    encode("aaabbc") => [("a", 3), ("b", 2), ("c", 1)]
+    """
+    out: list[tuple[str, int]] = []
+    if not data:
+        return out
+
+    current = data[0]
+    count = 1
+    for ch in data:
+        if ch == current:
+            count += 1
+        else:
+            out.append((current, count))
+            current = ch
+            count = 1
+    return out
+```
+
+Find every bug and return the corrected function. Keep the same name, signature and
+docstring behaviour.
+
+Return the corrected function in a single Python code block. Explain what was wrong in no
+more than three sentences, after the code.
+'''
+
+criteria = '''
+Evaluation criteria:
+- There are two bugs, and both must be fixed.
+- Bug one: the loop iterates over `data` rather than `data[1:]`, so the first character is
+  counted twice. `encode("abc")` yields a count of 2 for "a".
+- Bug two: the final run is never appended, because runs are only flushed when a *different*
+  character is seen. The last group is silently dropped, so `encode("aaabbc")` loses the
+  "c" entirely.
+- The two bugs partly mask each other on some inputs, which is why a model that tests only
+  `encode("aaa")` will conclude the function is fine. Noticing that is worth credit in the
+  explanation.
+- Pairs must be tuples in input order; the empty string must still return an empty list.
+- Explanation limited to three sentences and placed after the code.
+'''
+
+[[checks]]
+type = "code_exec"
+suite = "suites/fix_run_length_test.py"

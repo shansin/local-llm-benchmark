@@ -270,7 +270,6 @@ def render(document: dict[str, Any]) -> str:
                 _esc(model["details"].get("parameter_size", "?")),
                 _esc(model["details"].get("quantization_level", "?")),
                 score_cell,
-                f"±{model['overall'].get('repeat_std', 0.0):.2f}",
                 tps_cell,
                 f"{vram:.0f}" if vram else "—",
                 f"{model.get('cold_load_seconds', 0.0):.1f}",
@@ -285,17 +284,10 @@ def render(document: dict[str, Any]) -> str:
             cells.append("—" if value is None else f"{value:.1f}")
         category_rows.append(cells)
 
-    noise = max((m["overall"].get("repeat_std", 0.0) for m in models), default=0.0)
-    if noise > 0:
-        noise_note = (
-            f"Widest within-task spread across repeats is ±{noise:.2f} points. "
-            "Treat smaller differences as ties."
-        )
-    else:
-        noise_note = (
-            "This run sampled each prompt once, so there is no noise estimate — "
-            "differences between models cannot be distinguished from sampling variation."
-        )
+    noise_note = (
+        "Each prompt is sampled once at temperature 0, so treat small differences "
+        "between models as ties."
+    )
 
     gpus = "; ".join(host.get("gpus") or []) or "Not detected"
     generation = ", ".join(f"{k}={v}" for k, v in (config.get("generation") or {}).items())
@@ -304,7 +296,7 @@ def render(document: dict[str, Any]) -> str:
 <h1>Benchmark — {_esc(document.get("run", ""))}</h1>
 <div class="meta">
   {_esc(host.get("cpu") or "Unknown CPU")} · {_esc(host.get("ram") or "?")} RAM · {_esc(gpus)}<br>
-  {len(document.get("tasks", []))} tasks · {config.get("repeats", 1)} repeat(s) per prompt ·
+  {len(document.get("tasks", []))} tasks ·
   judges: {_esc(", ".join(config.get("judges") or []) or "none")}<br>
   <code>{_esc(generation)}</code>
 </div>
@@ -316,7 +308,7 @@ def render(document: dict[str, Any]) -> str:
 <p class="note">{_esc(noise_note)}</p>
 {
         _table(
-            ["Model", "Params", "Quant", "Score", "Noise", "Tok/s", "VRAM (MiB)", "Load (s)"],
+            ["Model", "Params", "Quant", "Score", "Tok/s", "VRAM (MiB)", "Load (s)"],
             summary_rows,
         )
     }

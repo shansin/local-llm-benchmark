@@ -1,0 +1,53 @@
+category = "coding"
+difficulty = "hard"
+
+prompt = '''
+The function below is supposed to return the number of days two date ranges have in common.
+Both ranges are inclusive of their end dates: a booking from the 3rd to the 5th covers three
+days.
+
+```python
+from datetime import date
+
+
+def overlap_days(a_start: date, a_end: date, b_start: date, b_end: date) -> int:
+    """Days covered by both ranges. Both ranges include their end date."""
+    if a_start > a_end or b_start > b_end:
+        raise ValueError("each range must start on or before it ends")
+
+    start = max(a_start, b_start)
+    end = min(a_end, b_end)
+    if start > end:
+        return 0
+    return (end - start).days
+```
+
+Find every bug and return the corrected function. Keep the same name, signature and the
+ValueError behaviour.
+
+Return the corrected function in a single Python code block. Explain what was wrong in no
+more than three sentences, after the code.
+'''
+
+criteria = '''
+Evaluation criteria:
+- One bug, and it is entirely about inclusivity. `(end - start).days` counts the gaps
+  between dates, not the dates themselves, so every answer is one too low. The fix is
+  `(end - start).days + 1`.
+- The case that exposes it most clearly is two ranges meeting on exactly one day: the
+  correct answer is 1 and the original returns 0 — indistinguishable, to a caller, from
+  no overlap at all.
+- The `start > end` early return must stay: with the `+ 1` applied unconditionally, ranges
+  that do not overlap would otherwise return 1 or a negative number. A fix that removes the
+  guard, or that computes `max(0, (end - start).days + 1)` without it, must still pass every
+  non-overlap case.
+- The ValueError on a reversed input range must be preserved.
+- Explanation limited to three sentences and placed after the code.
+
+A model that rewrites the function with a different algorithm but the same off-by-one has
+not fixed anything; the tests, not the prose, decide this one.
+'''
+
+[[checks]]
+type = "code_exec"
+suite = "suites/fix_date_overlap_test.py"

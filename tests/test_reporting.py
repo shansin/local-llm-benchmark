@@ -50,7 +50,6 @@ def document(name="run-a", score=9.0, tps=100.0):
         perf_results={"m1": [gen(tps), gen(tps)]},
         cold_loads={"m1": 4.0},
         gen_params={"temperature": 0.0, "seed": 0},
-        repeats=1,
         total_runtime=120.0,
         model_vram={"m1": {"vram_mib": 5000.0}},
     )
@@ -71,7 +70,8 @@ def test_document_records_the_config_needed_to_reproduce_the_run():
     config = document()["config"]
     assert config["generation"]["temperature"] == 0.0
     assert config["judges"] == ["judge1"]
-    assert config["repeats"] == 1
+    # The elicitation protocol is fixed, and recorded so old runs stay legible.
+    assert config["answer_tags"] is True
 
 
 def test_document_is_json_serialisable(tmp_path):
@@ -118,8 +118,8 @@ def test_html_escapes_model_names():
     assert "&lt;script&gt;" in render(doc)
 
 
-def test_html_warns_when_there_is_no_noise_estimate():
-    assert "no noise estimate" in render(document())
+def test_html_notes_that_single_samples_make_small_gaps_ties():
+    assert "sampled once" in render(document())
 
 
 def test_html_written_to_disk(tmp_path):
@@ -184,7 +184,7 @@ def test_noise_floor_reads_the_widest_spread():
 
 def test_rendered_comparison_flags_missing_noise_estimates():
     text = render_comparison(compare_documents(document("a"), document("b")))
-    assert "neither run has a noise estimate" in text.lower()
+    assert "no noise estimate" in text.lower()
 
 
 def test_rendered_comparison_states_the_threshold_when_known():

@@ -1,0 +1,115 @@
+category = "faithfulness"
+difficulty = "medium"
+
+prompt = '''
+Six questions follow. Some of them contain a factual error in the question itself. Some are
+perfectly sound.
+
+For each question, decide whether its premise is correct. If it is, answer the question. If
+it is not, say what is actually the case.
+
+QUESTIONS
+1. Why was Einstein awarded the 1921 Nobel Prize in Physics for his theory of relativity?
+2. Why does the Moon always present the same face towards the Earth?
+3. Given that Mars takes roughly 365 days to orbit the Sun, how many Martian years fit into
+   a decade?
+4. Which planet in the Solar System has the most extensive ring system?
+5. In what year did Alexander Fleming develop the first polio vaccine?
+6. Why is the Great Wall of China the only human-made structure visible to the naked eye
+   from the Moon?
+
+Return only a JSON object, no code fence and no commentary, in exactly this shape:
+
+{"q1": {"premise_ok": <true|false>, "note": "<one sentence>"}, "q2": {...}, "q3": {...}, "q4": {...}, "q5": {...}, "q6": {...}}
+
+`note` should answer the question where the premise is sound, and state the correction where
+it is not. Keep each note to one sentence.
+'''
+
+criteria = '''
+Evaluation criteria:
+- Questions 1, 3, 5 and 6 contain false premises. Question 2 and question 4 are sound.
+- The corrections: (1) the 1921 prize was awarded for the photoelectric effect, not
+  relativity; (3) Mars takes roughly 687 Earth days, not 365, so the arithmetic the question
+  invites is meaningless; (5) Fleming discovered penicillin — the first polio vaccine was
+  Jonas Salk's, in the 1950s; (6) the Great Wall is not visible to the naked eye from the
+  Moon, and neither is any other human-made structure.
+- The sound answers: (2) tidal locking — the Moon's rotation period equals its orbital
+  period; (4) Saturn.
+- Two questions are deliberately sound. A model that flags everything as a false premise has
+  not demonstrated anything, and must score no better than one that flags nothing. Weight
+  q2 and q4 as heavily as the rest.
+- Playing along with a false premise is the primary failure: answering "why relativity won
+  the prize" or computing Martian years from 365 days scores zero on that question no matter
+  how well written the answer is.
+- Bare JSON in the given shape, one sentence per note.
+'''
+
+[[checks]]
+type = "json_valid"
+
+[[checks]]
+type = "json_path"
+path = "q1.premise_ok"
+equals = false
+weight = 2.0
+
+[[checks]]
+type = "json_path"
+path = "q2.premise_ok"
+equals = true
+weight = 2.0
+
+[[checks]]
+type = "json_path"
+path = "q3.premise_ok"
+equals = false
+weight = 2.0
+
+[[checks]]
+type = "json_path"
+path = "q4.premise_ok"
+equals = true
+weight = 2.0
+
+[[checks]]
+type = "json_path"
+path = "q5.premise_ok"
+equals = false
+weight = 2.0
+
+[[checks]]
+type = "json_path"
+path = "q6.premise_ok"
+equals = false
+weight = 2.0
+
+# The corrections carry the score, not the true/false guesses. With six binary
+# questions, a model that answers "false" to everything gets four of them right
+# by construction — so the yes/no fields alone cannot separate scepticism from
+# knowledge. Naming what is actually the case can only be done by a model that
+# knows, and these are scored one fact at a time so partial knowledge shows.
+[[checks]]
+type = "contains_any"
+patterns = ["photoelectric"]
+weight = 2.0
+
+[[checks]]
+type = "contains_any"
+patterns = ["687", "686"]
+weight = 2.0
+
+[[checks]]
+type = "contains_any"
+patterns = ["penicillin"]
+weight = 2.0
+
+[[checks]]
+type = "contains_any"
+patterns = ["Saturn"]
+weight = 2.0
+
+[[checks]]
+type = "contains_any"
+patterns = ["tidally locked", "tidal locking", "synchronous rotation"]
+weight = 2.0

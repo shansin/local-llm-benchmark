@@ -6,7 +6,7 @@ import os
 from pathlib import Path
 from typing import Any
 
-from llmbench.config import GenerationParams
+from llmbench.config import OBJECTIVE_WEIGHT, GenerationParams
 from llmbench.scoring.aggregate import (
     Repeats,
     blend_repeats,
@@ -113,7 +113,6 @@ def write_model_benchmark(
                 task.category,
                 task.id,
                 task.difficulty,
-                f"{len(repeats)}",
                 f"{p['tps_median']:.1f}",
                 f"{p['gen_time_median']:.2f}",
                 f"{p['tokens_median']:.0f}",
@@ -125,7 +124,6 @@ def write_model_benchmark(
             "Category",
             "Task",
             "Difficulty",
-            "Repeats",
             "Tokens/s",
             "Gen Time (s)",
             "Tokens",
@@ -141,7 +139,7 @@ def write_model_benchmark(
         truncated = f"{task.prompt[:200]}{'...' if len(task.prompt) > 200 else ''}"
         md += f"**Prompt:** {truncated}\n\n"
         if repeats:
-            md += f"**Response (repeat 1 of {len(repeats)}):**\n\n{repeats[0]['response']}\n\n"
+            md += f"**Response:**\n\n{repeats[0]['response']}\n\n"
         md += "---\n\n"
 
     (model_dir / "aggregate_benchmark.md").write_text(md)
@@ -189,7 +187,12 @@ def _answer_provenance(result: dict[str, Any]) -> str:
     """
     extraction = extraction_for(result)
     notes = []
-    if result.get("truncated") or not extraction.complete:
+    if result.get("discarded_reasoning"):
+        notes.append(
+            "**reasoning discarded** — tokens were decoded onto neither channel; "
+            "the budget was spent before the answer began"
+        )
+    elif result.get("truncated") or not extraction.complete:
         notes.append("**truncated** — stopped at the context limit, not by choice")
     if extraction.source not in ("verbatim",):
         notes.append(f"answer read from `{extraction.source}`")
@@ -307,6 +310,7 @@ def _completeness_section(all_results: dict[str, dict[str, Repeats]], num_ctx: i
             model,
             f"{s['total']:.0f}",
             f"{s['truncated']:.0f}",
+            f"{s['discarded_reasoning']:.0f}",
             f"{s['empty']:.0f}",
             f"{s['leaked_reasoning']:.0f}",
             f"{s['errors']:.0f}",
@@ -314,7 +318,16 @@ def _completeness_section(all_results: dict[str, dict[str, Repeats]], num_ctx: i
         for model, s in stats.items()
     ]
     md += _table(
-        ["Model", "Generations", "Truncated", "No answer", "Leaked reasoning", "Errors"], rows
+        [
+            "Model",
+            "Generations",
+            "Truncated",
+            "…discarded",
+            "No answer",
+            "Leaked reasoning",
+            "Errors",
+        ],
+        rows,
     )
 
     if any(s["truncated"] for s in stats.values()):
@@ -324,18 +337,38 @@ def _completeness_section(all_results: dict[str, dict[str, Repeats]], num_ctx: i
             "scored as missing answers, because that is what they are — not as wrong "
             "ones. Raise `NUM_CTX` and re-run before reading those rows as quality.\n"
         )
+    if any(s["discarded_reasoning"] for s in stats.values()):
+        md += (
+            "\n**…discarded** is the share of those truncations that raising `NUM_CTX` "
+            "cannot fix. Tokens were decoded that arrived on neither the answer nor the "
+            "`thinking` channel, so the budget was spent before the answer began. The "
+            "preflight chooses a thinking mode that avoids this on a trivial prompt; a "
+            "nonzero count here means the model behaved differently at task length, "
+            "which is itself a finding about the model.\n"
+        )
     if any(s["leaked_reasoning"] for s in stats.values()):
         md += (
-            "\n**Leaked reasoning** counts answers that begin with first-person planning "
-            "prose rather than the answer itself, with no `<think>` tags to separate the "
-            "two. Every deterministic check then measures the planning notes: a 260-word "
-            "scene is counted at 4311 words, and a *never write the word 'wolf'* "
-            "constraint fails on the line where the model reminded itself not to. The "
-            "judge, reading further down, scores the real answer — which is why such a "
-            "model shows a large positive judge-calibration figure and a depressed "
-            "objective score at the same time. Re-run it with `--answer-tags` to score "
-            "the answer instead of the deliberation.\n"
+            "\n**Leaked reasoning** counts answers that open with first-person planning "
+            "prose despite the instruction to put the final answer inside "
+            "`<answer></answer>` — the model ignored the delimiter it was asked for. "
+            "Deterministic checks on those responses may be measuring the planning "
+            "notes rather than the answer, so read that model's objective scores with "
+            "suspicion.\n"
         )
+    return md
+
+
+def _excluded_section(excluded: dict[str, str]) -> str:
+    """Models the preflight kept out of the run, with the evidence."""
+    if not excluded:
+        return ""
+    md = "\n## Excluded models\n\n"
+    md += (
+        "These models produced no scorable answer to a trivial preflight prompt under "
+        "any thinking mode, so benchmarking them would have measured the harness "
+        "rather than the model. They have no leaderboard row.\n\n"
+    )
+    md += _table(["Model", "Preflight evidence"], [[m, note] for m, note in excluded.items()])
     return md
 
 
@@ -349,12 +382,11 @@ def write_results(
     perf_results: dict[str, Repeats] | None = None,
     cold_loads: dict[str, float] | None = None,
     gen_params: GenerationParams | dict[str, Any] | None = None,
-    repeats: int = 1,
     total_runtime: float | None = None,
     objective_scores: dict[str, Scores] | None = None,
-    objective_weight: float = 0.6,
     prefill_results: dict[str, dict[str, Repeats]] | None = None,
     model_vram: dict[str, dict[str, float]] | None = None,
+    excluded: dict[str, str] | None = None,
 ) -> None:
     """Write results.md: performance, quality by category, and a per-task breakdown."""
     perf_results = perf_results or {}
@@ -370,7 +402,7 @@ def write_results(
         judge = judge_scores.get(model_name, {})
         objective = objective_scores.get(model_name, {})
         return {
-            key: blend_repeats(objective.get(key, []), judge.get(key, []), objective_weight)
+            key: blend_repeats(objective.get(key, []), judge.get(key, []), OBJECTIVE_WEIGHT)
             for key in task_keys
         }
 
@@ -378,7 +410,6 @@ def write_results(
     md += _system_info_section()
     md += _params_line(gen_params)
     md += f"- **Tasks:** {len(tasks)} across {len(categories)} categories\n"
-    md += f"- **Repeats per prompt:** {repeats}\n"
     if total_runtime is not None:
         md += f"- **Total Benchmark Runtime:** {format_duration(total_runtime)}\n"
     md += "\n"
@@ -387,18 +418,19 @@ def write_results(
         all_results, all_details, perf_results, cold_loads, task_keys, model_vram or {}
     )
     md += _prefill_section(prefill_results or {})
+    md += _excluded_section(excluded or {})
     md += _completeness_section(all_results, _num_ctx_of(gen_params))
 
     # ---- Quality by category ----
     md += "\n## Quality\n\n"
     md += (
-        f"Blended score: {objective_weight:.0%} deterministic checks, "
-        f"{1 - objective_weight:.0%} judge ({judge_model}). "
-        "Tasks with no checks are scored by the judge alone.\n\n"
+        f"Blended score: {OBJECTIVE_WEIGHT:.0%} deterministic checks, "
+        f"{1 - OBJECTIVE_WEIGHT:.0%} judge ({judge_model}). "
+        "Tasks with no checks are scored by the judge alone. Each prompt is sampled "
+        "once at temperature 0, so treat small differences between models as ties.\n\n"
     )
     rows = []
     unscored_seen = False
-    noise_floors = []
     for model_name in all_results:
         scores = blended_for(model_name)
         cells = [model_name]
@@ -411,30 +443,16 @@ def write_results(
             else:
                 cells.append(f"{stats['mean']:.1f}")
         overall = model_score_stats(scores, task_keys, weights)
-        noise_floors.append(overall["repeat_std"])
         if overall["mean"] is None:
             cells.append("—")
         elif overall["n_scored"] < overall["n_total"]:
             cells.append(f"**{overall['mean']:.2f}**\\*")
         else:
             cells.append(f"**{overall['mean']:.2f}**")
-        cells.append(f"{overall['repeat_std']:.2f}")
         rows.append(cells)
 
-    md += _table(["Model", *[c.title() for c in categories], "Avg Score", "Noise ±"], rows)
+    md += _table(["Model", *[c.title() for c in categories], "Avg Score"], rows)
 
-    floor = max(noise_floors) if noise_floors else 0.0
-    if floor > 0:
-        md += (
-            f"\n**Noise floor:** the widest within-task spread across repeats is ±{floor:.2f} "
-            "points. Treat differences in Avg Score smaller than that as ties.\n"
-        )
-    elif repeats < 2:
-        md += (
-            "\n**No noise estimate:** this run sampled each prompt once "
-            "(`QUALITY_REPEATS=1`), so differences between models cannot be "
-            "distinguished from sampling noise.\n"
-        )
     if unscored_seen:
         md += (
             "\n\\* — some tasks were never scored (judge timeout, error, or unparseable output). "

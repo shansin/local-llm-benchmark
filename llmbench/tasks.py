@@ -15,13 +15,20 @@ from pathlib import Path
 from typing import Any
 
 CHECK_TYPES = {
+    "answer_equals",
     "code_exec",
     "contains_all",
     "contains_any",
+    "json_path",
+    "json_valid",
+    "line_count",
+    "match_count",
     "regex",
     "word_count",
-    "json_valid",
 }
+
+# Checks that count something and so need at least one bound to count against.
+COUNTING_CHECKS = {"line_count", "match_count", "word_count"}
 
 DIFFICULTIES = {"easy", "medium", "hard"}
 
@@ -76,10 +83,19 @@ def _validate_check(check: dict[str, Any], where: str) -> None:
         raise TaskError(f"{where}: {kind} check needs a non-empty `patterns` list")
     if kind == "regex" and not check.get("pattern"):
         raise TaskError(f"{where}: regex check needs a `pattern`")
-    if kind == "word_count" and "min" not in check and "max" not in check:
-        raise TaskError(f"{where}: word_count check needs `min` and/or `max`")
+    if kind in COUNTING_CHECKS and not {"min", "max", "equals"} & set(check):
+        raise TaskError(f"{where}: {kind} check needs `min`, `max` and/or `equals`")
     if kind == "code_exec" and not check.get("suite"):
         raise TaskError(f"{where}: code_exec check needs a `suite` path")
+    if kind == "json_path":
+        if not check.get("path"):
+            raise TaskError(f"{where}: json_path check needs a `path`")
+        if "equals" not in check:
+            raise TaskError(f"{where}: json_path check needs an `equals` value")
+    if kind == "answer_equals" and "expected" not in check:
+        raise TaskError(f"{where}: answer_equals check needs an `expected` value")
+    if kind == "match_count" and not check.get("pattern"):
+        raise TaskError(f"{where}: match_count check needs a `pattern`")
 
 
 def load_task_file(path: Path) -> Task:

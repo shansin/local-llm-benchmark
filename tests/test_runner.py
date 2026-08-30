@@ -233,3 +233,34 @@ def test_a_model_without_a_thinking_channel_is_measured_anyway(monkeypatch):
     assert r["error"] is None
     assert r["response"] == "hi"
     assert len(calls) == 2
+
+
+def test_tokens_on_neither_channel_are_flagged_as_discarded_reasoning():
+    """The gemma4 case: a full budget spent, both channels empty.
+
+    Ollama runs a hybrid-reasoning model in reasoning mode when `think` is left
+    unset and streams none of it. It reads as a truncation, but raising NUM_CTX
+    is the wrong remedy, so it has to be countable on its own.
+    """
+    payload = {**FINAL, "done_reason": "length", "eval_count": 12288}
+    r = metrics_from_response(payload, text="", thinking="")
+    assert r["discarded_reasoning"]
+    assert r["truncated"]
+
+
+def test_truncation_with_a_partial_answer_is_not_discarded_reasoning():
+    payload = {**FINAL, "done_reason": "length"}
+    assert not metrics_from_response(payload, text="half an ans")["discarded_reasoning"]
+
+
+def test_truncation_with_only_reasoning_is_not_discarded_reasoning():
+    """Reasoning that reached the thinking channel was kept, not thrown away."""
+    payload = {**FINAL, "done_reason": "length"}
+    assert not metrics_from_response(payload, text="", thinking="let me think")[
+        "discarded_reasoning"
+    ]
+
+
+def test_a_generation_that_decoded_nothing_is_not_discarded_reasoning():
+    """No tokens spent means nothing was lost — that is some other failure."""
+    assert not metrics_from_response({**FINAL, "eval_count": 0}, text="")["discarded_reasoning"]

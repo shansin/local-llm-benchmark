@@ -12,6 +12,7 @@ import json
 from pathlib import Path
 from typing import Any
 
+from llmbench.config import OBJECTIVE_WEIGHT
 from llmbench.scoring.aggregate import (
     Repeats,
     blend_repeats,
@@ -24,7 +25,10 @@ from llmbench.sysinfo import get_cpu_info, get_gpu_info, get_ram_info
 from llmbench.tasks import Task, categories_of, group_by_category
 
 RESULTS_FILE = "results.json"
-SCHEMA_VERSION = 1
+# 2: fixed protocol (answer tags always on, per-model thinking mode from the
+# preflight), single sample per prompt, per-model elicitation profiles, and an
+# excluded-models list.
+SCHEMA_VERSION = 2
 
 
 def build_document(
@@ -37,14 +41,11 @@ def build_document(
     perf_results: dict[str, Repeats] | None = None,
     cold_loads: dict[str, float] | None = None,
     gen_params: dict[str, Any] | None = None,
-    repeats: int = 1,
     total_runtime: float | None = None,
     objective_scores: dict[str, Any] | None = None,
-    objective_weight: float = 0.6,
     prefill_results: dict[str, dict[str, Repeats]] | None = None,
     model_vram: dict[str, dict[str, float]] | None = None,
-    answer_tags: bool = False,
-    think: bool | None = None,
+    profiles: dict[str, dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     """Assemble the full result document."""
     perf_results = perf_results or {}
@@ -52,6 +53,7 @@ def build_document(
     objective_scores = objective_scores or {}
     prefill_results = prefill_results or {}
     model_vram = model_vram or {}
+    profiles = profiles or {}
 
     categories = categories_of(tasks)
     by_category = group_by_category(tasks)
@@ -63,7 +65,7 @@ def build_document(
         judge = judge_scores.get(model_name, {})
         objective = objective_scores.get(model_name, {})
         blended = {
-            key: blend_repeats(objective.get(key, []), judge.get(key, []), objective_weight)
+            key: blend_repeats(objective.get(key, []), judge.get(key, []), OBJECTIVE_WEIGHT)
             for key in task_keys
         }
 
@@ -87,6 +89,8 @@ def build_document(
             {
                 "name": model_name,
                 "details": all_details.get(model_name, {}),
+                # How the preflight established this model should be spoken to.
+                "elicitation": profiles.get(model_name, {}),
                 "memory": model_vram.get(model_name, {}),
                 "cold_load_seconds": cold_loads.get(model_name, 0.0),
                 "throughput": perf_summary(perf_results.get(model_name, [])),
@@ -122,13 +126,20 @@ def build_document(
         # with a different context window, is measuring on a different ruler.
         "config": {
             "generation": gen_params or {},
-            "repeats": repeats,
-            "objective_weight": objective_weight,
+            "objective_weight": OBJECTIVE_WEIGHT,
             "judges": judge_models,
-            # Both change the text models were asked to produce, so both change
-            # what a score means.
-            "answer_tags": answer_tags,
-            "think": think,
+            # The fixed elicitation protocol: answer tags on every prompt, and
+            # the thinking mode chosen per model by the preflight (recorded in
+            # each model's "elicitation" entry).
+            "answer_tags": True,
+            "think": "per-model",
+        },
+        # Models the preflight excluded: they produced no scorable answer to a
+        # trivial prompt under any thinking mode, so they have no results row.
+        "excluded_models": {
+            name: profile.get("note", "")
+            for name, profile in profiles.items()
+            if not profile.get("usable", True)
         },
         "tasks": [
             {

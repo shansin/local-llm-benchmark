@@ -1,0 +1,96 @@
+category = "faithfulness"
+difficulty = "hard"
+
+prompt = '''
+Answer the seven questions below using only the passage. If the passage does not contain
+the information needed to answer a question, the answer is the exact string "not stated".
+Do not use outside knowledge and do not infer a figure the passage does not give.
+
+PASSAGE
+The Kestrel Point wind farm was commissioned in March 2019 with 14 turbines. Its operator,
+Marrow Energy, reported an average capacity factor of 41% across the site's first full year
+of operation. In 2021 the site added a 20 MW battery installation. Following a subsea cable
+fault in November 2022, output from the farm was curtailed for nine weeks while repairs were
+carried out. The site employs 23 people on a permanent basis, with additional seasonal
+contractors during maintenance windows.
+
+QUESTIONS
+1. How many turbines were commissioned in March 2019?
+2. What average capacity factor was reported for the first full year?
+3. How many weeks was output curtailed after the cable fault?
+4. How many people does the site employ on a permanent basis?
+5. How much did the wind farm cost to build?
+6. Which manufacturer supplied the turbines?
+7. How many hours of energy can the battery installation store?
+
+Return only a JSON object, with no code fence and no commentary:
+
+{"q1": <answer>, "q2": <answer>, "q3": <answer>, "q4": <answer>, "q5": <answer>, "q6": <answer>, "q7": <answer>}
+
+Numeric answers should be bare numbers. Any answer the passage does not support must be the
+exact string "not stated".
+'''
+
+criteria = '''
+Evaluation criteria:
+- Questions 1, 2, 3 and 4 are answerable from the passage: 14, 41, 9 and 23.
+- Questions 5 and 6 are not answerable. The passage gives no cost and names no turbine
+  manufacturer. Any figure or name supplied here is a fabrication, and it is the single
+  most important thing this task measures.
+- Question 7 is the discriminating one. The passage gives the battery's power rating
+  (20 MW), not its energy capacity. Duration cannot be derived from power alone, so the
+  answer is "not stated". A model that answers "20 hours", "4 hours", or reasons its way to
+  a typical duration has substituted a plausible number for a missing one.
+- Answering "not stated" to a question that *is* answerable is also wrong. The task is not
+  rewarding caution; it is rewarding knowing the difference.
+- Bare JSON with the seven keys, no fence, no preamble.
+
+Score primarily on questions 5, 6 and 7. Fluency is irrelevant here.
+'''
+
+[[checks]]
+type = "json_valid"
+
+[[checks]]
+type = "json_path"
+path = "q1"
+equals = 14
+
+[[checks]]
+type = "json_path"
+path = "q2"
+equals = 41
+
+[[checks]]
+type = "json_path"
+path = "q3"
+equals = 9
+
+[[checks]]
+type = "json_path"
+path = "q4"
+equals = 23
+
+[[checks]]
+type = "json_path"
+path = "q5"
+equals = "not stated"
+weight = 2.0
+
+[[checks]]
+type = "json_path"
+path = "q6"
+equals = "not stated"
+weight = 2.0
+
+[[checks]]
+type = "json_path"
+path = "q7"
+equals = "not stated"
+weight = 3.0
+
+[[checks]]
+type = "match_count"
+pattern = "(?i)not stated"
+equals = 3
+weight = 2.0

@@ -185,3 +185,154 @@ def test_blended_score(objective, judge, expected):
 def test_blend_weight_is_configurable():
     assert blended_score(10.0, 0.0, objective_weight=1.0) == 10.0
     assert blended_score(10.0, 0.0, objective_weight=0.0) == 0.0
+
+
+# ---------- json_path ----------
+
+RECORD = '{"meeting": {"room": "Redwood Room", "attendees": [{"name": "Ada"}, {"name": "Bo"}]}}'
+
+
+def _path(response, path, expected, **kw):
+    return run_check({"type": "json_path", "path": path, "equals": expected, **kw}, response)
+
+
+def test_json_path_walks_objects_and_list_indices():
+    assert _path(RECORD, "meeting.attendees[1].name", "Bo")["passed"] == 1.0
+
+
+def test_json_path_compares_strings_case_insensitively():
+    """A model that title-cases an extracted value still extracted the value."""
+    assert _path(RECORD, "meeting.room", "redwood room")["passed"] == 1.0
+
+
+def test_json_path_reports_what_it_found_instead():
+    result = _path(RECORD, "meeting.room", "Cedar Room")
+    assert result["passed"] == 0.0
+    assert "Redwood Room" in result["detail"]
+
+
+def test_json_path_names_the_missing_key():
+    assert "no key 'floor'" in _path(RECORD, "meeting.floor", 3)["detail"]
+
+
+def test_json_path_reads_through_a_code_fence():
+    """Fence-wrapping is what `json_valid` is for; it must not fail twice."""
+    fenced = f"Here you go:\n\n```json\n{RECORD}\n```\n"
+    assert _path(fenced, "meeting.room", "Redwood Room")["passed"] == 1.0
+
+
+def test_json_path_accepts_a_number_the_model_quoted():
+    assert _path('{"total": "42"}', "total", 42)["passed"] == 1.0
+
+
+def test_json_path_honours_a_numeric_tolerance():
+    assert _path('{"pi": 3.14}', "pi", 3.14159, tolerance=0.01)["passed"] == 1.0
+    assert _path('{"pi": 3.14}', "pi", 3.14159)["passed"] == 0.0
+
+
+def test_json_path_fails_a_response_with_no_json_at_all():
+    assert _path("I could not extract that.", "meeting.room", "x")["passed"] == 0.0
+
+
+def test_json_path_does_not_coerce_booleans_to_numbers():
+    assert _path('{"flag": true}', "flag", 1)["passed"] == 0.0
+
+
+# ---------- answer_equals ----------
+
+
+def _answer(response, expected, **kw):
+    return run_check({"type": "answer_equals", "expected": expected, **kw}, response)
+
+
+def test_answer_equals_reads_the_final_answer_line():
+    response = "Step 1: ...\nStep 2: ...\n\nAnswer: 147"
+    assert _answer(response, 147, numeric=True)["passed"] == 1.0
+
+
+def test_answer_equals_scores_the_conclusion_not_the_working():
+    """A right method that lands on the wrong number is a wrong answer."""
+    response = "6 and 4 give 12 as the LCM.\n\nFinal answer: 5 hours"
+    assert _answer(response, 3, numeric=True)["passed"] == 0.0
+
+
+def test_answer_equals_takes_the_last_marker_when_a_model_restates_the_format():
+    response = "I will end with `Answer: <n>`.\n\nAnswer: 12"
+    assert _answer(response, 12, numeric=True)["passed"] == 1.0
+
+
+def test_answer_equals_falls_back_to_the_closing_lines():
+    assert (
+        _answer("Working it through...\n\nThe tank fills in 3 hours.", 3, numeric=True)["passed"]
+        == 1.0
+    )
+
+
+def test_answer_equals_ignores_numbers_from_the_working():
+    """Only the stated answer counts, or every derivation matches by accident."""
+    response = "Pipe A does 1/6, pipe B does 1/4, the drain removes 1/12.\n\nAnswer: 3 hours"
+    assert _answer(response, 6, numeric=True)["passed"] == 0.0
+
+
+def test_answer_equals_strips_thousands_separators():
+    assert _answer("Answer: 1,048,576", 1048576, numeric=True)["passed"] == 1.0
+
+
+def test_answer_equals_applies_a_numeric_tolerance():
+    assert _answer("Answer: 3.33", 3.3333, numeric=True, tolerance=0.01)["passed"] == 1.0
+
+
+def test_answer_equals_accepts_any_of_several_wordings():
+    assert _answer("Answer: not stated in the passage", ["not stated", "unknown"])["passed"] == 1.0
+
+
+def test_answer_equals_fails_a_response_that_never_commits():
+    result = _answer("It depends on several factors.", 3, numeric=True)
+    assert result["passed"] == 0.0
+    assert "no number" in result["detail"]
+
+
+# ---------- line_count and match_count ----------
+
+
+def test_line_count_catches_a_model_that_stopped_early():
+    """Twenty rows and an ellipsis is not a partial success."""
+    response = "\n".join(f"row {i}" for i in range(20)) + "\n... and so on"
+    assert (
+        run_check({"type": "line_count", "pattern": r"^row ", "equals": 30}, response)["passed"]
+        == 0.0
+    )
+
+
+def test_line_count_ignores_blank_lines():
+    assert run_check({"type": "line_count", "equals": 3}, "a\n\n\nb\n\nc\n")["passed"] == 1.0
+
+
+def test_line_count_accepts_a_range():
+    check = {"type": "line_count", "min": 2, "max": 4}
+    assert run_check(check, "a\nb\nc")["passed"] == 1.0
+    assert run_check(check, "a")["passed"] == 0.0
+
+
+def test_match_count_counts_every_occurrence_not_every_line():
+    response = "not stated. not stated. answered."
+    assert (
+        run_check({"type": "match_count", "pattern": "not stated", "equals": 2}, response)["passed"]
+        == 1.0
+    )
+
+
+def test_match_count_reports_the_number_it_found():
+    result = run_check({"type": "match_count", "pattern": "x", "equals": 5}, "xxx")
+    assert "3 matches" in result["detail"]
+
+
+def test_a_counting_check_on_an_empty_answer_does_not_pass_by_being_zero():
+    """Silence satisfies "at most 3 matches" unless empty answers fail outright."""
+    task = Task(
+        id="t",
+        category="c",
+        prompt="p",
+        checks=[{"type": "match_count", "pattern": "wolf", "max": 0}],
+    )
+    assert run_checks(task, "")[0]["passed"] == 0.0

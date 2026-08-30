@@ -1,0 +1,50 @@
+category = "coding"
+difficulty = "medium"
+
+prompt = '''
+The function below is supposed to return the maximum sum of any contiguous window of exactly
+`k` elements in `values`. It is subtly wrong: it passes on some inputs and fails on others.
+
+```python
+def max_window_sum(values: list[int], k: int) -> int:
+    """Return the largest sum of any k consecutive elements."""
+    if k <= 0 or k > len(values):
+        raise ValueError("k must be between 1 and len(values)")
+
+    best = 0
+    window = sum(values[:k])
+    for i in range(k, len(values)):
+        window += values[i] - values[i - k]
+        if window > best:
+            best = window
+    return best
+```
+
+Find every bug and return the corrected function. Keep the same name, signature and
+behaviour on the inputs it already handles correctly, including the ValueError.
+
+Return the corrected function in a single Python code block. Explain what was wrong in no
+more than three sentences, after the code.
+'''
+
+criteria = '''
+Evaluation criteria:
+- There are two bugs, and both must be fixed.
+- Bug one: `best` is initialised to 0 rather than to the first window's sum. On all-negative
+  input the function returns 0, which is not the sum of any window. Initialising
+  `best = window` fixes it.
+- Bug two: the first window is never compared against `best`. Even after fixing the
+  initialisation, a list where the maximum window is the first one must still be handled —
+  which the same fix covers, and which a fix of `best = float("-inf")` also covers.
+- A fix that only addresses the negative-numbers case by clamping, or that rewrites the
+  function as an O(n*k) recomputation, is worth less: the sliding window is the point.
+- The signature, name and ValueError behaviour must be unchanged.
+- Explanation limited to three sentences and placed after the code.
+
+The debugging is the task. A correct rewrite from scratch scores full marks on the tests but
+should not score full marks on the explanation.
+'''
+
+[[checks]]
+type = "code_exec"
+suite = "suites/fix_window_sum_test.py"

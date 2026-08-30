@@ -173,3 +173,16 @@ def test_completeness_separates_truncation_from_leakage_from_errors():
     assert stats["empty"] == 1
     assert stats["leaked_reasoning"] == 1
     assert stats["errors"] == 1
+
+
+def test_completeness_counts_discarded_reasoning_within_the_truncations():
+    """Not a separate failure — the subset that more context cannot fix."""
+    results = {
+        "a": [
+            {"response": "", "truncated": True, "discarded_reasoning": True},
+            {"response": "<think>cut off mid-thought", "truncated": True},
+        ]
+    }
+    stats = completeness(results)
+    assert stats["truncated"] == 2
+    assert stats["discarded_reasoning"] == 1

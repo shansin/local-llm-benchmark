@@ -1,0 +1,58 @@
+category = "instruction"
+difficulty = "hard"
+
+prompt = '''
+Write a summary of how a bicycle derailleur changes gear.
+
+Requirements, in order of precedence — where two requirements cannot both be met, the one
+with the lower number wins, and you must follow it:
+
+1. The summary must be exactly 3 sentences.
+2. Every sentence must be at least 25 words long.
+3. The summary must not exceed 60 words in total.
+4. Do not use the words "chain" or "gear".
+5. Name at least four distinct mechanical components.
+
+Output only the summary. Do not explain your choices, do not mention the requirements, and
+do not note which ones you dropped.
+'''
+
+criteria = '''
+Evaluation criteria:
+- Requirements 2 and 3 are mutually exclusive: three sentences of at least 25 words each is
+  at least 75 words, which requirement 3 caps at 60. The stated precedence resolves it —
+  requirement 2 is lower-numbered, so it wins and requirement 3 is broken. The correct
+  output is therefore 3 sentences, each 25 words or more, totalling at least 75 words.
+- A model that produces a 60-word summary has followed the *later* requirement, which is
+  exactly backwards, and is the main error this task detects.
+- Requirement 4 conflicts with nothing and must still be honoured: neither "chain" nor
+  "gear" may appear, in any case or inflection. Note that "changes gear" appears in the
+  prompt itself — reusing that phrasing is the easy failure.
+- Requirement 5 conflicts with nothing: at least four named components.
+- Requirement 1 conflicts with nothing: exactly three sentences.
+- No meta-commentary of any kind. A summary followed by "note: requirements 2 and 3
+  conflict" fails the last instruction.
+
+Score primarily on whether the precedence rule was applied in the right direction.
+'''
+
+[[checks]]
+type = "word_count"
+min = 75
+
+[[checks]]
+type = "regex"
+pattern = "(?i)\\b(chain|chains|gear|gears|geared)\\b"
+negate = true
+weight = 2.0
+
+[[checks]]
+type = "match_count"
+pattern = "[.!?](\\s|$)"
+equals = 3
+weight = 2.0
+
+[[checks]]
+type = "regex"
+pattern = "(?i)(requirement|constraint|conflict|impossible|note:)"
+negate = true

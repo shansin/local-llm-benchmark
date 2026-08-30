@@ -144,3 +144,34 @@ def test_the_shipped_task_set_is_valid():
         assert task.criteria, f"{task.id} has no criteria"
     for category, group in group_by_category(tasks).items():
         assert len(group) >= 3, f"{category} has only {len(group)} task(s)"
+
+
+def test_json_path_check_needs_a_path_and_an_expected_value(tmp_path):
+    for body, message in (
+        ('[[checks]]\ntype = "json_path"\nequals = 1\n', "needs a `path`"),
+        ('[[checks]]\ntype = "json_path"\npath = "a.b"\n', "needs an `equals`"),
+    ):
+        path = tmp_path / "t.toml"
+        path.write_text('prompt = "p"\n' + body)
+        with pytest.raises(TaskError, match=message):
+            load_task_file(path)
+
+
+def test_answer_equals_check_needs_an_expected_value(tmp_path):
+    path = tmp_path / "t.toml"
+    path.write_text('prompt = "p"\n[[checks]]\ntype = "answer_equals"\n')
+    with pytest.raises(TaskError, match="needs an `expected`"):
+        load_task_file(path)
+
+
+def test_a_counting_check_needs_a_bound_to_count_against(tmp_path):
+    path = tmp_path / "t.toml"
+    path.write_text('prompt = "p"\n[[checks]]\ntype = "line_count"\n')
+    with pytest.raises(TaskError, match="needs `min`, `max` and/or `equals`"):
+        load_task_file(path)
+
+
+def test_equals_alone_satisfies_a_counting_check(tmp_path):
+    path = tmp_path / "t.toml"
+    path.write_text('prompt = "p"\n[[checks]]\ntype = "line_count"\nequals = 30\n')
+    assert load_task_file(path).checks[0]["equals"] == 30

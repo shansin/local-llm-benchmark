@@ -40,12 +40,20 @@ class GenResult(TypedDict):
     rather than because the model was finished. Those are not bad answers, they
     are absent ones, and a benchmark that averages them in as zeros is
     reporting its own context setting as a property of the model.
+
+    `discarded_reasoning` marks the worse case: tokens were decoded but arrived
+    on neither channel. A hybrid-reasoning model asked for no `think` mode at
+    all reasons anyway, and Ollama streams none of it — the budget is spent,
+    the answer never starts, and both `response` and `thinking` come back
+    empty. That reads as a plain truncation but has a different remedy: set
+    THINK rather than raising NUM_CTX.
     """
 
     response: str
     thinking: str
     done_reason: str
     truncated: bool
+    discarded_reasoning: bool
     tokens_per_sec: float
     ttft: float
     prefill_time: float
@@ -57,6 +65,9 @@ class GenResult(TypedDict):
     seed: int | None
     error: str | None
     gpu: dict[str, float] | None
+    # The `think` setting the request was ultimately served with — None when it
+    # was never sent, or was dropped because the model has no thinking channel.
+    think_used: bool | None
 
 
 def _failed(marker: str, error: str, seed: int | None = None) -> GenResult:
@@ -65,6 +76,7 @@ def _failed(marker: str, error: str, seed: int | None = None) -> GenResult:
         "thinking": "",
         "done_reason": "",
         "truncated": False,
+        "discarded_reasoning": False,
         "tokens_per_sec": 0.0,
         "ttft": 0.0,
         "prefill_time": 0.0,
@@ -76,6 +88,7 @@ def _failed(marker: str, error: str, seed: int | None = None) -> GenResult:
         "seed": seed,
         "error": error,
         "gpu": None,
+        "think_used": None,
     }
 
 
@@ -95,11 +108,14 @@ def metrics_from_response(
     prompt_eval_count = data.get("prompt_eval_count", 0)
 
     prefill_time = prompt_eval_duration / 1e9
+    answer = data.get("response", "") if text is None else text
+    reasoning = thinking or str(data.get("thinking") or "")
     return {
-        "response": data.get("response", "") if text is None else text,
-        "thinking": thinking or str(data.get("thinking") or ""),
+        "response": answer,
+        "thinking": reasoning,
         "done_reason": str(data.get("done_reason") or ""),
         "truncated": _hit_the_wall(data, eval_count, prompt_eval_count, num_ctx),
+        "discarded_reasoning": _reasoned_into_the_void(eval_count, answer, reasoning),
         "tokens_per_sec": (eval_count / eval_duration * 1e9) if eval_duration > 0 else 0.0,
         # Without a streamed measurement, the best available estimate of the
         # user-visible wait is load + prefill.
@@ -115,12 +131,26 @@ def metrics_from_response(
         "seed": None,
         "error": None,
         "gpu": None,
+        "think_used": None,
     }
 
 
 def _rejected_thinking(exc: Exception) -> bool:
     """Is this failure Ollama saying the model has no thinking channel?"""
     return "think" in str(exc).lower()
+
+
+def _reasoned_into_the_void(eval_count: int, answer: str, reasoning: str) -> bool:
+    """Were tokens decoded that reached neither the answer nor the thinking channel?
+
+    Ollama drops a hybrid-reasoning model's chain of thought when the request
+    does not set `think` either way: the model reasons, the tokens are billed
+    against `num_predict`, and nothing is streamed on either channel. A run
+    that spends its whole budget this way is indistinguishable, from the
+    payload alone, from one that hit the context wall mid-sentence — but
+    raising NUM_CTX will not fix it, and setting THINK will.
+    """
+    return bool(eval_count) and not answer.strip() and not reasoning.strip()
 
 
 def _hit_the_wall(
@@ -238,6 +268,7 @@ def run_prompt(
                 num_ctx=params.num_ctx,
             )
             result["seed"] = params.seed
+            result["think_used"] = payload.get("think")
             return result
 
     print(f"failed ({last_error}) after {retries} attempts, skipping.")

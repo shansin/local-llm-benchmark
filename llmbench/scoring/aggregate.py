@@ -42,11 +42,15 @@ def completeness(results_by_task: dict[str, Repeats]) -> dict[str, float]:
     """Count the generations that produced no answer, and why.
 
     Quality tables average scores; they cannot show that a score is low because
-    the answer was absent. These three counts are what separates "answered
-    badly" from "never answered", and the second is usually a fact about the
-    run's configuration rather than about the model.
+    the answer was absent. These counts are what separates "answered badly"
+    from "never answered", and most of them are facts about the run's
+    configuration rather than about the model.
+
+    `discarded_reasoning` is a subset of `truncated`, not a separate column of
+    failures: it names the truncations that no amount of extra context will
+    fix, because the tokens were thrown away rather than cut off.
     """
-    total = truncated = empty = leaked = errors = 0
+    total = truncated = empty = leaked = errors = discarded = 0
     for repeats in results_by_task.values():
         for result in repeats:
             total += 1
@@ -56,6 +60,8 @@ def completeness(results_by_task: dict[str, Repeats]) -> dict[str, float]:
             extraction = extraction_for(result)
             if result.get("truncated") or not extraction.complete:
                 truncated += 1
+            if result.get("discarded_reasoning"):
+                discarded += 1
             if extraction.empty:
                 empty += 1
             elif looks_like_leaked_reasoning(extraction):
@@ -64,6 +70,7 @@ def completeness(results_by_task: dict[str, Repeats]) -> dict[str, float]:
     return {
         "total": float(total),
         "truncated": float(truncated),
+        "discarded_reasoning": float(discarded),
         "empty": float(empty),
         "leaked_reasoning": float(leaked),
         "errors": float(errors),
